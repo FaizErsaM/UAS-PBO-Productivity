@@ -1,6 +1,0 @@
-{
-  "name": "HeyJipro",
-  "description": "A smart and calm productivity companion for students.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
