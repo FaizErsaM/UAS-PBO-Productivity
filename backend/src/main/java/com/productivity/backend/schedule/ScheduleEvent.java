@@ -1,11 +1,17 @@
 package com.productivity.backend.schedule;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "schedule_events", schema = "public")
+@Data // Otomatis membuatkan semua Getter dan Setter
+@NoArgsConstructor // Otomatis membuatkan constructor kosong
+@AllArgsConstructor // Otomatis membuatkan constructor dengan semua parameter
 public class ScheduleEvent {
 
     @Id
@@ -30,71 +36,4 @@ public class ScheduleEvent {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private ZonedDateTime createdAt;
-
-    // Constructor Kosong (Wajib untuk JPA)
-    public ScheduleEvent() {
-    }
-
-    // Constructor Parameterized
-    public ScheduleEvent(UUID userId, String title, String description, ZonedDateTime startTime, ZonedDateTime endTime) {
-        this.userId = userId;
-        this.title = title;
-        this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-    }
-
-    // =================== GETTER DAN SETTER ===================
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public ZonedDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(ZonedDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public ZonedDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(ZonedDateTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public ZonedDateTime getCreatedAt() {
-        return createdAt;
-    }
 }

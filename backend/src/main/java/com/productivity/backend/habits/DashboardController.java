@@ -1,4 +1,4 @@
-    package com.productivity.backend.dashboard;
+package com.productivity.backend.dashboard;
 
 public class DashboardController {
     
