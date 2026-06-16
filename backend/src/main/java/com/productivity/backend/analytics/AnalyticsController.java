@@ -1,19 +1,22 @@
 package com.productivity.backend.analytics;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/analytics")
+@CrossOrigin(origins = "${app.frontend.url}")
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
     public AnalyticsController(AnalyticsService analyticsService) {
         this.analyticsService = analyticsService;
+    }
+
+    @GetMapping("/dashboard/{userId}")
+    public ResponseEntity<DashboardAnalyticsResponse> getDashboardData(@PathVariable Long userId) {
+        return ResponseEntity.ok(analyticsService.getDashboardAnalytics(userId));
     }
 
     @PostMapping("/insight")

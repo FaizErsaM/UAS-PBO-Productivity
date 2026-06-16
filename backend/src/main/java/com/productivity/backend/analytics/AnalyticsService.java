@@ -46,8 +46,7 @@ public class AnalyticsService {
         GeminiGenerateContentRequest requestBody = new GeminiGenerateContentRequest(
                 List.of(new Content("user", List.of(new Part(prompt)))),
                 new SystemInstruction(List.of(new Part(buildSystemInstruction()))),
-                new GenerationConfig(0.2, 512, "application/json")
-        );
+                new GenerationConfig(0.2, 512, "application/json"));
 
         try {
             String requestJson = objectMapper.writeValueAsString(requestBody);
@@ -58,13 +57,16 @@ public class AnalyticsService {
                     .POST(HttpRequest.BodyPublishers.ofString(requestJson, StandardCharsets.UTF_8))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("Gemini API returned status " + response.statusCode() + ": " + response.body());
+                throw new IllegalStateException(
+                        "Gemini API returned status " + response.statusCode() + ": " + response.body());
             }
 
-            GeminiGenerateContentResponse geminiResponse = objectMapper.readValue(response.body(), GeminiGenerateContentResponse.class);
+            GeminiGenerateContentResponse geminiResponse = objectMapper.readValue(response.body(),
+                    GeminiGenerateContentResponse.class);
             String rawText = extractResponseText(geminiResponse);
             String jsonText = extractJsonPayload(rawText);
 
@@ -77,6 +79,51 @@ public class AnalyticsService {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Gemini request was interrupted", e);
         }
+    }
+
+    // Tambahkan fungsi baru ini di dalam class AnalyticsService Anda
+
+    public DashboardAnalyticsResponse getDashboardAnalytics(Long userId) {
+        // 1. MOCK DATA / QUERY DATABASE (Silakan hubungkan dengan Repository Task &
+        // Habit tim lain nanti)
+        // Di sini kita siapkan data sesuai dengan gambar yang Pangeran kirim (Tugas:
+        // 1/4 = 25%)
+        int tasksCompleted = 1;
+        int totalTasks = 4;
+        int completionRate = (totalTasks > 0) ? (tasksCompleted * 100 / totalTasks) : 0;
+        int habitSuccessRate = 20; // Sesuai data di UI: 20%
+
+        // 2. Menyusun daftar data untuk Grafik Batang "Specific Tasks Completion"
+        List<TaskProgress> specificTasks = List.of(
+                new TaskProgress("Read Article on UX Research Methods", 100),
+                new TaskProgress("Submit Project Artifact", 0),
+                new TaskProgress("Review Chapter 4", 0),
+                new TaskProgress("Final Essay: Human Computer Interaction", 0));
+
+        // 3. Menyusun daftar data untuk Grafik Batang "Habit Goal Progress"
+        List<HabitProgress> habitGoals = List.of(
+                new HabitProgress("Deep Work", 2, 30, 6),
+                new HabitProgress("Reading", 15, 30, 50), // 15/30 days = 50% sesuai UI
+                new HabitProgress("Drink Water", 1, 30, 3));
+
+        // 4. Otomatis memanggil fungsi Gemini AI yang sudah Pangeran buat sebelumnya
+        AnalyticsModel activitySummary = new AnalyticsModel(tasksCompleted, habitsAchievedFromGraph(habitGoals), 45); // contoh
+        ProductivityInsightResponse aiInsight = this.generateInsight(activitySummary);
+
+        // 5. Bungkus semua data menjadi satu kesatuan objek respons
+        SummaryData summary = new SummaryData(tasksCompleted, totalTasks, completionRate, habitSuccessRate);
+        return new DashboardAnalyticsResponse(summary, specificTasks, habitGoals, aiInsight);
+    }
+
+    // Fungsi pembantu untuk menghitung rata-rata kebiasaan yang tercapai
+    private int habitsAchievedFromGraph(List<HabitProgress> habits) {
+        if (habits.isEmpty())
+            return 0;
+        int totalRate = 0;
+        for (HabitProgress h : habits) {
+            totalRate += h.completionRate();
+        }
+        return totalRate / habits.size();
     }
 
     private void saveInsight(AnalyticsModel activitySummary, ProductivityInsightResponse insight) {
@@ -157,58 +204,49 @@ public class AnalyticsService {
     private record GeminiGenerateContentRequest(
             List<Content> contents,
             SystemInstruction systemInstruction,
-            GenerationConfig generationConfig
-    ) {
+            GenerationConfig generationConfig) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Content(
             String role,
-            List<Part> parts
-    ) {
+            List<Part> parts) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Part(
-            String text
-    ) {
+            String text) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record SystemInstruction(
-            List<Part> parts
-    ) {
+            List<Part> parts) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record GenerationConfig(
             Double temperature,
             Integer maxOutputTokens,
-            String responseMimeType
-    ) {
+            String responseMimeType) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record GeminiGenerateContentResponse(
-            List<Candidate> candidates
-    ) {
+            List<Candidate> candidates) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Candidate(
-            ContentResponse content
-    ) {
+            ContentResponse content) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record ContentResponse(
-            List<PartResponse> parts
-    ) {
+            List<PartResponse> parts) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record PartResponse(
-            @JsonProperty("text") String text
-    ) {
+            @JsonProperty("text") String text) {
     }
 }

@@ -1,16 +1,16 @@
 package com.productivity.backend.analytics;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "analytics_insights")
+@Getter // Menggantikan semua fungsi get... manual
+@Setter // Menggantikan semua fungsi set... manual
+@NoArgsConstructor // Menyediakan konstruktor kosong bawaan yang dibutuhkan JPA
 public class AnalyticsInsightEntity {
 
     @Id
@@ -37,68 +37,4 @@ public class AnalyticsInsightEntity {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public int getTasksCompleted() {
-        return tasksCompleted;
-    }
-
-    public void setTasksCompleted(int tasksCompleted) {
-        this.tasksCompleted = tasksCompleted;
-    }
-
-    public int getHabitsAchieved() {
-        return habitsAchieved;
-    }
-
-    public void setHabitsAchieved(int habitsAchieved) {
-        this.habitsAchieved = habitsAchieved;
-    }
-
-    public int getTotalFocusMinutes() {
-        return totalFocusMinutes;
-    }
-
-    public void setTotalFocusMinutes(int totalFocusMinutes) {
-        this.totalFocusMinutes = totalFocusMinutes;
-    }
-
-    public String getStatusProduktivitas() {
-        return statusProduktivitas;
-    }
-
-    public void setStatusProduktivitas(String statusProduktivitas) {
-        this.statusProduktivitas = statusProduktivitas;
-    }
-
-    public String getKesimpulan() {
-        return kesimpulan;
-    }
-
-    public void setKesimpulan(String kesimpulan) {
-        this.kesimpulan = kesimpulan;
-    }
-
-    public String getDaftarSaranJson() {
-        return daftarSaranJson;
-    }
-
-    public void setDaftarSaranJson(String daftarSaranJson) {
-        this.daftarSaranJson = daftarSaranJson;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

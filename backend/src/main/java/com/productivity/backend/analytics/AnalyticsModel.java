@@ -1,41 +1,14 @@
 package com.productivity.backend.analytics;
 
-public class AnalyticsModel {
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@Data               // Otomatis membuatkan semua Getter, Setter, dan toString()
+@NoArgsConstructor  // Otomatis membuatkan Konstruktor Kosong
+@AllArgsConstructor // Otomatis membuatkan Konstruktor Lengkap
+public class AnalyticsModel {
     private int tasksCompleted;
     private int habitsAchieved;
     private int totalFocusMinutes;
-
-    public AnalyticsModel() {
-    }
-
-    public AnalyticsModel(int tasksCompleted, int habitsAchieved, int totalFocusMinutes) {
-        this.tasksCompleted = tasksCompleted;
-        this.habitsAchieved = habitsAchieved;
-        this.totalFocusMinutes = totalFocusMinutes;
-    }
-
-    public int getTasksCompleted() {
-        return tasksCompleted;
-    }
-
-    public void setTasksCompleted(int tasksCompleted) {
-        this.tasksCompleted = tasksCompleted;
-    }
-
-    public int getHabitsAchieved() {
-        return habitsAchieved;
-    }
-
-    public void setHabitsAchieved(int habitsAchieved) {
-        this.habitsAchieved = habitsAchieved;
-    }
-
-    public int getTotalFocusMinutes() {
-        return totalFocusMinutes;
-    }
-
-    public void setTotalFocusMinutes(int totalFocusMinutes) {
-        this.totalFocusMinutes = totalFocusMinutes;
-    }
 }
