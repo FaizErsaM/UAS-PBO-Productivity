@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Card } from './Card';
-import { User, Mail, Shield, Bell, Moon, Sun, Smartphone, LogOut, Camera, Upload, Check, ChevronRight, Lock, Key, Volume2, AlertCircle, Plus, Trash2, Edit2, GraduationCap, Award, Briefcase, Link, Calendar, Hash, ShieldAlert, ShieldCheck, Send, RefreshCw } from 'lucide-react';
+import { User, Mail, Shield, Bell, Moon, Sun, LogOut, Camera, Upload, Check, Lock, Key, Volume2, AlertCircle, Plus, Trash2, Edit2, GraduationCap, Award, Briefcase, Calendar, Hash, ShieldAlert, ShieldCheck, Send, RefreshCw } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+
+const API_BASE_URL = 'http://localhost:8080/api/setting'; 
 
 export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const { 
@@ -19,17 +21,12 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     setOccupation,
     saveProfileToDb
   } = useAppContext();
+
   const [activeSection, setActiveSection] = useState<'profile' | 'notifications' | 'privacy'>('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Profile Form States
+  // --- 1. DEKLARASI STATE ---
   const [email, setEmail] = useState("student@example.com");
-
-  React.useEffect(() => {
-    if (user?.email) {
-      setEmail(user.email);
-    }
-  }, [user]);
 
   // Custom Profile Grid States
   const [profileGridItems, setProfileGridItems] = useState([
@@ -44,15 +41,13 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const [gridIconName, setGridIconName] = useState("GraduationCap");
   const [isAddingGrid, setIsAddingGrid] = useState(false);
 
-  // Notification Preferences States
+  // Notification States (WhatsApp Sudah Dihapus dari Sini)
   const [pushEnabled, setPushEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [emailDigestEnabled, setEmailDigestEnabled] = useState(true);
-  const [whatsappNumber, setWhatsappNumber] = useState("+628123456789");
-  const [isWaConnected, setIsWaConnected] = useState(true);
-  const [emailFrequency, setEmailFrequency] = useState("immediate");
+  const [emailFrequency, setEmailFrequency] = useState("daily");
 
-  // Email Verification States
+  // Privacy & Verification States
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
@@ -60,10 +55,30 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const [otpSent, setOtpSent] = useState(false);
   const [verificationError, setVerificationError] = useState("");
 
-  // Password States
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // --- 2. AMBIL DATA DARI BACKEND JAVA ---
+  React.useEffect(() => {
+    if (user?.id && user?.email) {
+      setEmail(user.email);
+
+      fetch(`${API_BASE_URL}?userId=${user.id}&email=${user.email}`)
+        .then(response => response.json())
+        .then(data => {
+          setPushEnabled(data.pushEnabled ?? true);
+          setSoundEnabled(data.soundEnabled ?? true);
+          setEmailDigestEnabled(data.emailDigestEnabled ?? true);
+          setEmailFrequency(data.emailFrequency || "daily");
+          
+          if (data.profileGridItems && data.profileGridItems.length > 0) {
+            setProfileGridItems(data.profileGridItems);
+          }
+        })
+        .catch(error => console.error("Gagal memuat data dari Backend Java:", error));
+    }
+  }, [user]);
 
   const renderGridIcon = (iconName: string) => {
     switch(iconName) {
@@ -71,7 +86,6 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       case 'Award': return <Award className="w-4 h-4 text-purple" />;
       case 'Briefcase': return <Briefcase className="w-4 h-4 text-purple" />;
       case 'Calendar': return <Calendar className="w-4 h-4 text-purple" />;
-      case 'Link': return <Link className="w-4 h-4 text-purple" />;
       case 'Hash': return <Hash className="w-4 h-4 text-purple" />;
       default: return <User className="w-4 h-4 text-purple" />;
     }
@@ -138,9 +152,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      executeWithFeedback(async () => {
-        throw new Error('File harus berupa format gambar.');
-      }, '');
+      executeWithFeedback(async () => { throw new Error('File harus berupa format gambar.'); }, '');
       return;
     }
 
@@ -163,7 +175,6 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   const handleGoogleImport = () => {
     executeWithFeedback(async () => {
-      // Simulate fetching from Google
       await new Promise(r => setTimeout(r, 800));
       setProfilePic("https://api.dicebear.com/7.x/avataaars/svg?seed=GoogleUser&style=circle&backgroundColor=transparent");
     }, 'Foto profil berhasil diimpor dari Google akun!');
@@ -171,29 +182,50 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.id) return;
+
+    const profileData = {
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      occupation: occupation,
+      profileGridItems: profileGridItems
+    };
+
     executeWithFeedback(async () => {
+      const response = await fetch(`${API_BASE_URL}/profile?userId=${user.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData)
+      });
+      if (!response.ok) {
+        throw new Error('Gagal menyimpan profil ke server backend.');
+      }
       await saveProfileToDb(firstName, lastName, profilePic, occupation);
-    }, 'Informasi pribadi berhasil disimpan!');
+    }, 'Informasi pribadi & grid profil berhasil disimpan ke database!');
   };
 
   const handleSavePreferences = () => {
-    executeWithFeedback(async () => {
-      await new Promise(r => setTimeout(r, 500));
-    }, 'Preferensi notifikasi berhasil diperbarui!');
-  };
+    if (!user?.id) return;
 
-  const handleConnectWa = () => {
-    executeWithFeedback(async () => {
-      await new Promise(r => setTimeout(r, 600));
-      setIsWaConnected(true);
-    }, `Nomor WhatsApp ${whatsappNumber} berhasil dihubungkan!`);
-  };
+    const notificationData = {
+      pushEnabled: pushEnabled,
+      soundEnabled: soundEnabled,
+      emailDigestEnabled: emailDigestEnabled,
+      emailFrequency: emailFrequency
+    };
 
-  const handleDisconnectWa = () => {
     executeWithFeedback(async () => {
-      await new Promise(r => setTimeout(r, 300));
-      setIsWaConnected(false);
-    }, 'WhatsApp berhasil diputuskan.');
+      const response = await fetch(`${API_BASE_URL}/notifications?userId=${user.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notificationData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal menyimpan preferensi ke server.');
+      }
+    }, 'Preferensi notifikasi berhasil disimpan ke Supabase Cloud!');
   };
 
   const handleTestBell = () => {
@@ -208,9 +240,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
         }, '');
       });
     } catch(e) {
-      executeWithFeedback(async () => {
-        throw new Error('Audio tidak dapat dimuat.');
-      }, '');
+      executeWithFeedback(async () => { throw new Error('Audio tidak dapat dimuat.'); }, '');
     }
   };
 
@@ -237,9 +267,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       }, 'Email Anda berhasil diverifikasi secara resmi!');
     } else {
       setVerificationError("Kode OTP yang dimasukkan tidak valid. Silakan coba lagi.");
-      executeWithFeedback(async () => {
-         throw new Error('Kode OTP tidak cocok.');
-      }, '');
+      executeWithFeedback(async () => { throw new Error('Kode OTP tidak cocok.'); }, '');
     }
   };
 
@@ -266,9 +294,10 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     }, 'Password Anda telah berhasil diperbarui!');
   };
 
+  // --- 3. RETURN JSX INTERFACE ---
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-navy">Settings</h2>
       </div>
 
@@ -303,13 +332,13 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                 />
                 <button 
                   onClick={handleUploadClick}
-                  className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm font-medium text-slate-600 hover:text-navy hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer animate-none"
+                  className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm font-medium text-slate-600 hover:text-navy hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Upload className="w-3 h-3"/> Upload Foto
                 </button>
                 <button 
                   onClick={handleGoogleImport}
-                  className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm font-medium text-slate-600 hover:text-navy hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer animate-none"
+                  className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm font-medium text-slate-600 hover:text-navy hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <img src="https://www.google.com/favicon.ico" className="w-3.5 h-3.5" alt="Google" /> Sync Google
                 </button>
@@ -354,7 +383,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                   className={`w-full flex items-center gap-3 px-4 py-2.5 font-semibold rounded-lg text-sm transition-all cursor-pointer ${activeSection === 'notifications' ? 'bg-purple/10 text-purple' : 'text-slate-600 hover:bg-slate-50 hover:text-navy'}`}
                 >
                   <Bell className="w-4.5 h-4.5" />
-                  Notifikasi & WhatsApp
+                  Notifikasi Sistem
                 </button>
                 <button 
                   onClick={() => setActiveSection('privacy')}
@@ -507,7 +536,6 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                           <option value="Award">Prestasi (Award)</option>
                           <option value="Briefcase">Pekerjaan/Status (Briefcase)</option>
                           <option value="Calendar">Tahun/Tanggal (Calendar)</option>
-                          <option value="Link">Tautan Web (Link)</option>
                           <option value="Hash">Nomor/ID (Hash)</option>
                           <option value="User">Umum (User)</option>
                         </select>
@@ -688,55 +716,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                   )}
                 </div>
               </Card>
-
-              <Card>
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-navy flex items-center gap-2">
-                      <Smartphone className="w-5 h-5 text-emerald-500" /> 
-                      Integrasi Pengingat WhatsApp
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Sistem otomatis mengirim notifikasi info tugas penting langsung ke nomor WA Anda.</p>
-                  </div>
-                  {isWaConnected ? (
-                    <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-md flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Aktif
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md">
-                      Terputus
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <input 
-                      type="tel" 
-                      value={whatsappNumber}
-                      onChange={(e) => setWhatsappNumber(e.target.value)}
-                      placeholder="+628123456789" 
-                      className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-navy font-semibold bg-slate-50"
-                    />
-                    {isWaConnected ? (
-                      <button 
-                        onClick={handleDisconnectWa}
-                        className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                      >
-                        Putuskan WA
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={handleConnectWa}
-                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
-                      >
-                        Koneksikan WA
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-400 italic">Format nomor menggunakan kode negara (Contoh: +6281xxxxxxxx).</p>
-                </div>
-              </Card>
+              {/* KARTU INTEGRASI WHATSAPP SEBELUMNYA DI SINI SUDAH DIHAPUS TOTAL */}
             </div>
           )}
 
@@ -827,7 +807,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                             value={verificationCode}
                             onChange={(e) => setVerificationCode(e.target.value)}
                             placeholder="Ketik 6 digit angka" 
-                            className="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-center tracking-widest font-bold text-navy focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple"
+                            className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-center tracking-widest font-bold text-navy focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple"
                             required
                           />
                           <button 
