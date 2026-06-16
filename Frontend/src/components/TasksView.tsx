@@ -115,8 +115,11 @@ export const TasksView = () => {
           ) : filteredTasks.map(task => {
             const priority = calculatePriority(task.deadline ?? '');
             const isLocked = hasUrgentTasks && !task.completed && priority !== 'high';
+            const isExpanded = expandedTaskId === task.id;
+
             return (
-            <div key={task.id} className="transition-colors overflow-hidden">
+            <div key={task.id} className="transition-colors overflow-hidden border-b border-slate-100 last:border-0">
+              {/* BAGIAN UTAMA BARIS TUGAS */}
               <div 
                 className={`p-5 flex items-center justify-between group hover:bg-slate-50/50 cursor-pointer ${task.completed ? 'opacity-60 bg-slate-50/30' : isLocked ? 'opacity-60 bg-slate-50/10' : ''}`}
                 onClick={(e) => toggleExpand(task.id, e)}
@@ -159,21 +162,73 @@ export const TasksView = () => {
                   }`}>
                     {getPriorityLabel(priority)}
                   </span>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <motion.button 
                       whileHover={{ scale: 1.15, rotate: 10 }}
                       whileTap={{ scale: 0.8, y: 2, transition: { type: "spring", stiffness: 400, damping: 10 } }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteTask(task.id);
+                        // Menambahkan konfirmasi hapus sederhana
+                        if(window.confirm('Hapus tugas ini?')) {
+                          deleteTask(task.id);
+                        }
                       }}
                       className="p-1.5 text-slate-400 hover:text-rose-500 transition-all rounded-lg hover:bg-rose-50 opacity-0 group-hover:opacity-100"
                     >
                       <Trash2 className="w-4 h-4" />
                     </motion.button>
+                    {/* ICON CHEVRON UNTUK EXPAND */}
+                    <div className="p-1.5 text-slate-400 group-hover:text-purple transition-colors">
+                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* BAGIAN EXPANDED DETAIL (AI MATERIALS) */}
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="bg-slate-50/50 border-t border-slate-100 overflow-hidden"
+                  >
+                    <div className="p-5 pl-14">
+                      {task.aiMaterials && task.aiMaterials.length > 0 ? (
+                        <div>
+                          <h5 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+                            <Sparkles className="w-4 h-4 text-purple" /> AI Study Materials
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {task.aiMaterials.map((mat, idx) => (
+                              <a 
+                                key={idx} 
+                                href={mat.link} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-purple/50 hover:shadow-sm transition-all group/link"
+                                onClick={(e) => e.stopPropagation()} // Mencegah baris tertutup saat link diklik
+                              >
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                  {getMaterialIcon(mat.type)}
+                                  <span className="text-sm text-slate-600 font-medium truncate">{mat.title}</span>
+                                </div>
+                                <ExternalLink className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover/link:opacity-100 transition-opacity flex-shrink-0 ml-2" />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-slate-500 italic">
+                          <FileText className="w-4 h-4 text-slate-400" />
+                          <p>No extra materials attached to this task.</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )})}
         </div>
@@ -235,4 +290,3 @@ export const TasksView = () => {
     </div>
   );
 };
-

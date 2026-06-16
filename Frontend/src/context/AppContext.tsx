@@ -28,6 +28,7 @@ interface AppContextType {
   setTheme: (theme: 'light' | 'dark') => void;
   addTask: (task: Omit<Task, 'id'>) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
+  updateTask: (id: string, updatedData: Partial<Task>) => Promise<void>; // <-- DITAMBAHKAN
   deleteTask: (id: string) => Promise<void>;
   addHabit: (habit: Omit<Habit, 'id'>) => Promise<void>;
   toggleHabitForToday: (id: string) => Promise<void>;
@@ -243,6 +244,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 'Status tugas diperbarui');
   };
 
+  // --- FUNGSI UPDATE TASK BARU DITAMBAHKAN DI SINI ---
+  const updateTask = async (id: string, updatedData: Partial<Task>) => {
+    if (!user) throw new Error('User tidak terautentikasi.');
+    const path = `users/${user.uid}/tasks/${id}`;
+    
+    await executeWithFeedback(async () => {
+      try {
+        const taskDocRef = doc(db, 'users', user.uid, 'tasks', id);
+        await updateDoc(taskDocRef, updatedData);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    }, 'Tugas berhasil diperbarui');
+  };
+
   const deleteTask = async (id: string) => {
     if (!user) throw new Error('User tidak terautentikasi.');
     const path = `users/${user.uid}/tasks/${id}`;
@@ -334,7 +350,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      tasks, habits, theme, feedback, toggleTheme, setTheme, addTask, toggleTask, deleteTask,
+      tasks, habits, theme, feedback, toggleTheme, setTheme, 
+      addTask, toggleTask, updateTask, deleteTask, // <-- UPDATE TASK DI-EXPORT DI SINI
       addHabit, toggleHabitForToday, deleteHabit, executeWithFeedback, user, authLoading,
       profilePic, setProfilePic, firstName, setFirstName, lastName, setLastName, occupation, setOccupation, saveProfileToDb
     }}>
