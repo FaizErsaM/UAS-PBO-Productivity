@@ -61,10 +61,10 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   // --- 2. AMBIL DATA DARI BACKEND JAVA ---
   React.useEffect(() => {
-    if (user?.id && user?.email) {
+    if (user?.uid && user?.email) {
       setEmail(user.email);
 
-      fetch(`${API_BASE_URL}?userId=${user.id}&email=${user.email}`)
+      fetch(`${API_BASE_URL}?userId=${user.uid}&email=${user.email}`)
         .then(response => response.json())
         .then(data => {
           setPushEnabled(data.pushEnabled ?? true);
@@ -182,7 +182,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) return;
+    if (!user?.uid) return;
 
     const profileData = {
       firstName: firstName,
@@ -193,7 +193,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     };
 
     executeWithFeedback(async () => {
-      const response = await fetch(`${API_BASE_URL}/profile?userId=${user.id}`, {
+      const response = await fetch(`${API_BASE_URL}/profile?userId=${user.uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileData)
@@ -206,7 +206,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   };
 
   const handleSavePreferences = () => {
-    if (!user?.id) return;
+    if (!user?.uid) return;
 
     const notificationData = {
       pushEnabled: pushEnabled,
@@ -216,7 +216,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     };
 
     executeWithFeedback(async () => {
-      const response = await fetch(`${API_BASE_URL}/notifications?userId=${user.id}`, {
+      const response = await fetch(`${API_BASE_URL}/notifications?userId=${user.uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(notificationData)

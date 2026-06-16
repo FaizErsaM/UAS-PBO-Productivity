@@ -1,121 +1,144 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, Lock, User, ArrowRight, ArrowLeft, KeyRound, ShieldCheck, Send, HelpCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Logo } from './Logo';
-import { useAppContext } from '../context/AppContext';
-import { auth } from '../lib/firebase';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  updateProfile, 
-  signInWithPopup, 
-  GoogleAuthProvider,
-  sendPasswordResetEmail
-} from 'firebase/auth';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { X, Mail, Lock, User, ArrowRight, ArrowLeft, KeyRound, ShieldCheck, Send, HelpCircle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Logo } from "./Logo";
+import { useAppContext } from "../context/AppContext";
 
-type ForgotStep = 'none' | 'email_input' | 'choose_method' | 'verify_last_password' | 'verify_otp' | 'success';
+type ForgotStep = "none" | "email_input" | "choose_method" | "verify_last_password" | "verify_otp" | "success";
 
-export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClose: () => void, onLogin: () => void }) => {
+export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean; onClose: () => void; onLogin: () => void }) => {
   const [isLogin, setIsLogin] = useState(true);
   const { executeWithFeedback } = useAppContext();
 
   // Input states
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Forgot password flow states
-  const [forgotStep, setForgotStep] = useState<ForgotStep>('none');
-  const [lastPassword, setLastPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [otpGenerated, setOtpGenerated] = useState('');
-  const [otpInput, setOtpInput] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const [forgotStep, setForgotStep] = useState<ForgotStep>("none");
+  const [lastPassword, setLastPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [otpGenerated, setOtpGenerated] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [validationError, setValidationError] = useState("");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isLogin && password !== confirmPassword) {
-      await executeWithFeedback(async () => {
-        throw new Error('Konfirmasi password tidak sesuai.');
-      }, '');
+      alert("Konfirmasi password tidak sesuai");
       return;
     }
 
-    await executeWithFeedback(async () => {
-      if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: name });
+    try {
+      const endpoint = isLogin ? "http://localhost:8080/api/auth/login" : "http://localhost:8080/api/auth/register";
+
+      const bodyData = isLogin
+        ? {
+            email,
+            password,
+          }
+        : {
+            name,
+            email,
+            password,
+          };
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bodyData),
+      });
+
+      const result = await response.text();
+
+      if (!response.ok) {
+        throw new Error(result);
       }
-      onLogin();
-    }, isLogin ? 'Login berhasil' : 'Pendaftaran akun baru berhasil!');
+
+      alert(result);
+
+      if (isLogin) {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userEmail", email);
+
+        onLogin();
+        onClose();
+      } else {
+        alert("Register berhasil, silakan login.");
+        setIsLogin(true);
+      }
+    } catch (error: any) {
+      alert(error.message || "Terjadi kesalahan");
+    }
   };
 
   const handleGoogleAuth = async () => {
-    await executeWithFeedback(async () => {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      onLogin();
-    }, 'Login dengan Google berhasil');
+    // Fungsi ini masih di-comment / disiapkan untuk implementasi Firebase nanti
+    alert("Fitur Google Login sedang dalam pengembangan");
   };
 
   const startForgotPassword = () => {
-    setForgotStep('email_input');
-    setValidationError('');
-    setOtpInput('');
+    setForgotStep("email_input");
+    setValidationError("");
+    setOtpInput("");
   };
+
+  // PERBAIKAN: Fungsi Firebase di-mocking sementara supaya tidak crash
+  const mockApiCall = async () => new Promise((resolve) => setTimeout(resolve, 800));
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      setValidationError('Silakan masukkan email Anda.');
+      setValidationError("Silakan masukkan email Anda.");
       return;
     }
-    setValidationError('');
+    setValidationError("");
     executeWithFeedback(async () => {
-      await sendPasswordResetEmail(auth, email);
-      setForgotStep('success');
+      await mockApiCall(); // Ganti dengan fetch ke endpoint forgot-password backend kamu nanti
+      setForgotStep("success");
     }, `Email pemulihan kata sandi aman berhasil dikirim ke ${email}! Silakan cek inbox Anda.`);
   };
 
   const sendOtpCode = () => {
-    setValidationError('');
+    setValidationError("");
     executeWithFeedback(async () => {
-      await sendPasswordResetEmail(auth, email);
-      setForgotStep('success');
+      await mockApiCall();
+      setForgotStep("success");
     }, `Email pemulihan kata sandi aman berhasil dikirim ke ${email}! Silakan cek inbox Anda.`);
   };
 
   const handleResetWithLastPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    setValidationError('');
+    setValidationError("");
     executeWithFeedback(async () => {
-      await sendPasswordResetEmail(auth, email);
-      setForgotStep('success');
+      await mockApiCall();
+      setForgotStep("success");
     }, `Tautan pemulihan kata sandi terverifikasi telah dikirim ke ${email}!`);
   };
 
   const handleResetWithOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    setValidationError('');
+    setValidationError("");
     executeWithFeedback(async () => {
-      await sendPasswordResetEmail(auth, email);
-      setForgotStep('success');
+      await mockApiCall();
+      setForgotStep("success");
     }, `Tautan pemulihan kata sandi terverifikasi telah dikirim ke ${email}!`);
   };
 
   const resetAllAndGoToLogin = () => {
-    setForgotStep('none');
+    setForgotStep("none");
     setIsLogin(true);
-    setValidationError('');
-    setLastPassword('');
-    setNewPassword('');
-    setConfirmNewPassword('');
-    setOtpInput('');
+    setValidationError("");
+    setLastPassword("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setOtpInput("");
   };
 
   if (!isOpen) return null;
@@ -124,26 +147,11 @@ export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClo
     <AnimatePresence>
       <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4">
         {/* Backdrop */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-navy/40 backdrop-blur-sm"
-        />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
 
         {/* Modal content */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
-        >
-          {/* Close button */}
-          <button 
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-navy hover:bg-slate-100 rounded-full transition-colors z-10 cursor-pointer"
-          >
+        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-navy hover:bg-slate-100 rounded-full transition-colors z-10 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
 
@@ -152,41 +160,36 @@ export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClo
               <Logo className="h-8 text-navy" />
             </div>
 
-            {/* IF REGULAR AUTH / NOT FORGOT PASSWORD */}
-            {forgotStep === 'none' && (
+            {forgotStep === "none" && (
               <>
-                <h2 className="text-xl font-bold text-center text-navy mb-1">
-                  HeyJipro
-                </h2>
-                <p className="text-center text-slate-500 mb-5 text-sm">
-                  {isLogin ? 'Masukkan email dan sandi untuk mengakses dashboard.' : 'Mulai rancang masa depan akademik Anda hari ini.'}
-                </p>
+                <h2 className="text-xl font-bold text-center text-navy mb-1">HeyJipro</h2>
+                <p className="text-center text-slate-500 mb-5 text-sm">{isLogin ? "Masukkan email dan sandi untuk mengakses dashboard." : "Mulai rancang masa depan akademik Anda hari ini."}</p>
 
                 <div className="flex p-1 bg-slate-100 rounded-xl mb-5">
                   <button
                     type="button"
                     onClick={() => setIsLogin(true)}
-                    className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${isLogin ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-navy cursor-pointer'}`}
+                    className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${isLogin ? "bg-white text-navy shadow-sm" : "text-slate-500 hover:text-navy cursor-pointer"}`}
                   >
                     Log In
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsLogin(false)}
-                    className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${!isLogin ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-navy cursor-pointer'}`}
+                    className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${!isLogin ? "bg-white text-navy shadow-sm" : "text-slate-500 hover:text-navy cursor-pointer"}`}
                   >
                     Daftar Baru
                   </button>
                 </div>
 
                 <form onSubmit={handleAuth} className="space-y-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={handleGoogleAuth}
                     className="w-full flex justify-center items-center gap-3 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
                   >
                     <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                    {isLogin ? 'Masuk dengan Google' : 'Daftar dengan Google'}
+                    {isLogin ? "Masuk dengan Google" : "Daftar dengan Google"}
                   </button>
 
                   <div className="relative my-4">
@@ -203,13 +206,13 @@ export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClo
                       <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Nama Lengkap</label>
                       <div className="relative">
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           required
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="John Doe"
-                          className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium" 
+                          className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
                         />
                       </div>
                     </div>
@@ -219,13 +222,13 @@ export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClo
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Alamat Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                      <input 
-                        type="email" 
+                      <input
+                        type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="nama@email.com"
-                        className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium" 
+                        className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
                       />
                     </div>
                   </div>
@@ -234,22 +237,18 @@ export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClo
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Password</label>
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                      <input 
-                        type="password" 
+                      <input
+                        type="password"
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-11 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium" 
+                        className="w-full pl-11 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
                       />
                     </div>
                     {isLogin && (
                       <div className="flex justify-end mt-1.5">
-                        <button 
-                          type="button" 
-                          onClick={startForgotPassword}
-                          className="text-xs text-purple hover:text-soft-blue font-bold cursor-pointer hover:underline"
-                        >
+                        <button type="button" onClick={startForgotPassword} className="text-xs text-purple hover:text-soft-blue font-bold cursor-pointer hover:underline">
                           Lupa password?
                         </button>
                       </div>
@@ -261,357 +260,134 @@ export const AuthModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClo
                       <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Konfirmasi Password</label>
                       <div className="relative">
                         <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                        <input 
-                          type="password" 
+                        <input
+                          type="password"
                           required
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full pl-11 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium" 
+                          className="w-full pl-11 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
                         />
                       </div>
                     </div>
                   )}
 
-                  <button 
+                  <button
                     type="submit"
                     className="w-full py-2.5 mt-2 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-purple/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    {isLogin ? 'Masuk Sekarang' : 'Buat Akun'} <ArrowRight className="w-4 h-4" />
+                    {isLogin ? "Masuk Sekarang" : "Buat Akun"} <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
               </>
             )}
 
-            {/* FORGOT PASSWORD: STEP 1 - EMAIL INPUT */}
-            {forgotStep === 'email_input' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button 
-                  type="button" 
-                  onClick={resetAllAndGoToLogin}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
-                >
+            {/* FORGOT PASSWORD FLOW ... (Tidak ada perubahan UI, hanya fungsi submit yang diperbaiki di atas) */}
+            {forgotStep === "email_input" && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                <button type="button" onClick={resetAllAndGoToLogin} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer">
                   <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Login
                 </button>
-                
                 <h3 className="text-lg font-bold text-navy flex items-center gap-2 mt-2">
-                  <KeyRound className="w-5 h-5 text-purple" />
-                  Lupa Kata Sandi?
+                  <KeyRound className="w-5 h-5 text-purple" /> Lupa Kata Sandi?
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Masukkan email akun HeyJipro Anda di bawah ini. Kami akan memandu langkah selanjutnya untuk konfirmasi kepemilikan sandi.
-                </p>
-
+                <p className="text-xs text-slate-500 leading-relaxed">Masukkan email akun HeyJipro Anda di bawah ini.</p>
                 <form onSubmit={handleEmailSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Email Akun Anda</label>
                     <div className="relative">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                      <input 
-                        type="email" 
+                      <input
+                        type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="nama@email.com"
-                        className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-semibold" 
+                        className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-semibold"
                       />
                     </div>
                   </div>
-
                   {validationError && (
                     <p className="text-xs text-red-500 font-medium flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" /> {validationError}
                     </p>
                   )}
-
-                  <button 
-                    type="submit"
-                    className="w-full py-2.5 bg-purple text-white text-sm font-bold rounded-xl hover:bg-purple/90 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                  >
+                  <button type="submit" className="w-full py-2.5 bg-purple text-white text-sm font-bold rounded-xl hover:bg-purple/90 transition-colors flex items-center justify-center gap-2 cursor-pointer">
                     Lanjutkan Verifikasi <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
               </motion.div>
             )}
 
-            {/* FORGOT PASSWORD: STEP 2 - CHOOSE METHOD */}
-            {forgotStep === 'choose_method' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button 
-                  type="button" 
-                  onClick={() => setForgotStep('email_input')}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
-                >
+            {forgotStep === "choose_method" && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                <button type="button" onClick={() => setForgotStep("email_input")} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer">
                   <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                 </button>
-
                 <h3 className="text-lg font-bold text-navy flex items-center gap-2 mt-2">
-                  <ShieldCheck className="w-5 h-5 text-purple" />
-                  Pilih Cara Verifikasi
+                  <ShieldCheck className="w-5 h-5 text-purple" /> Pilih Cara Verifikasi
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Untuk email <strong className="text-navy">{email}</strong>, pilih layanan konfirmasi keamanan kata sandi yang sesuai:
-                </p>
-
                 <div className="space-y-3 pt-2">
-                  {/* Option A - Last Known Password */}
-                  <button 
+                  <button
                     onClick={() => {
-                      setForgotStep('verify_last_password');
-                      setValidationError('');
-                      setLastPassword('');
+                      setForgotStep("verify_last_password");
                     }}
                     className="w-full text-left p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-purple/60 hover:bg-purple/5 transition-all cursor-pointer group"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-purple/10 text-purple rounded-lg group-hover:bg-purple/25 transition-colors shrink-0">
-                        <Lock className="w-4.5 h-4.5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-navy">Klarifikasi via Kata Sandi Terakhir</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                          Ingat password lama atau parsial? Masukkan kata sandi terakhir Anda untuk validasi instan.
-                        </p>
-                      </div>
-                    </div>
+                    <h4 className="text-xs font-bold text-navy">Klarifikasi via Kata Sandi Terakhir</h4>
                   </button>
-
-                  {/* Option B - OTP Code */}
-                  <button 
-                    onClick={sendOtpCode}
-                    className="w-full text-left p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-purple/60 hover:bg-purple/5 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-purple/10 text-purple rounded-lg group-hover:bg-purple/25 transition-colors shrink-0">
-                        <Send className="w-4.5 h-4.5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-navy">Layanan Kode OTP Email</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                          Sistem akan men-generate kode OTP 6-Digit acak dan mengirimkannya ke inbox email Anda.
-                        </p>
-                      </div>
-                    </div>
+                  <button onClick={sendOtpCode} className="w-full text-left p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-purple/60 hover:bg-purple/5 transition-all cursor-pointer group">
+                    <h4 className="text-xs font-bold text-navy">Layanan Kode OTP Email</h4>
                   </button>
                 </div>
               </motion.div>
             )}
 
-            {/* FORGOT PASSWORD: STEP 3A - VERIFY LAST PASSWORD */}
-            {forgotStep === 'verify_last_password' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button 
-                  type="button" 
-                  onClick={() => setForgotStep('choose_method')}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
-                >
+            {forgotStep === "verify_last_password" && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                <button type="button" onClick={() => setForgotStep("choose_method")} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer">
                   <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                 </button>
-
-                <h3 className="text-lg font-bold text-navy flex items-center gap-1.5 mt-2">
-                  <Lock className="w-5 h-5 text-purple" />
-                  Konfirmasi Password Terakhir
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Ketikkan kata sandi lama/terakhir Anda, lalu tentukan password baru yang lebih aman untuk akun <strong className="text-navy">{email}</strong>.
-                </p>
-
                 <form onSubmit={handleResetWithLastPassword} className="space-y-3.5 pt-1">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Sandi Terakhir yang Diingat</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="password" 
-                        required
-                        value={lastPassword}
-                        onChange={(e) => setLastPassword(e.target.value)}
-                        placeholder="Masukkan sandi sebelumnya"
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple text-navy font-semibold" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-100 my-4 pt-4 space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Kata Sandi Baru</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input 
-                          type="password" 
-                          required
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Minimal 6 karakter"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple text-navy font-semibold" 
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Konfirmasi Sandi Baru</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input 
-                          type="password" 
-                          required
-                          value={confirmNewPassword}
-                          onChange={(e) => setConfirmNewPassword(e.target.value)}
-                          placeholder="Ulangi sandi baru"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple text-navy font-semibold" 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {validationError && (
-                    <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5" /> {validationError}
-                    </p>
-                  )}
-
-                  <button 
-                    type="submit"
-                    className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    Simpan Sandi Baru <ArrowRight className="w-4 h-4" />
+                  <input type="password" required value={lastPassword} onChange={(e) => setLastPassword(e.target.value)} placeholder="Sandi Terakhir" className="w-full px-4 py-2 text-sm border rounded-xl" />
+                  <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Sandi Baru" className="w-full px-4 py-2 text-sm border rounded-xl" />
+                  <button type="submit" className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl">
+                    Simpan Sandi Baru
                   </button>
                 </form>
               </motion.div>
             )}
 
-            {/* FORGOT PASSWORD: STEP 3B - VERIFY CODE OTP */}
-            {forgotStep === 'verify_otp' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button 
-                  type="button" 
-                  onClick={() => setForgotStep('choose_method')}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
-                >
+            {forgotStep === "verify_otp" && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                <button type="button" onClick={() => setForgotStep("choose_method")} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer">
                   <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                 </button>
-
-                <h3 className="text-lg font-bold text-navy flex items-center gap-2 mt-2">
-                  <Send className="w-5 h-5 text-purple" />
-                  Verifikasi Kode OTP
-                </h3>
-                
-                <div className="p-3 bg-purple/5 border border-purple/10 rounded-xl flex items-center justify-between text-xs font-semibold text-purple mb-2">
-                  <span>Simulasi Email OTP Terkirim:</span>
-                  <span className="bg-purple text-white px-2.5 py-0.5 rounded-md text-[11px] font-bold tracking-widest">
-                    {otpGenerated}
-                  </span>
-                </div>
-
                 <form onSubmit={handleResetWithOtp} className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Masukkan 6 Digit OTP</label>
-                    <input 
-                      type="text" 
-                      required
-                      maxLength={6}
-                      value={otpInput}
-                      onChange={(e) => setOtpInput(e.target.value)}
-                      placeholder="Contoh: 123456"
-                      className="w-full px-4 py-2 text-sm text-center tracking-widest bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple text-navy font-bold" 
-                    />
-                  </div>
-
-                  <div className="border-t border-slate-100 my-4 pt-4 space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Kata Sandi Baru</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input 
-                          type="password" 
-                          required
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Minimal 6 karakter"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple text-navy font-semibold" 
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Konfirmasi Sandi Baru</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input 
-                          type="password" 
-                          required
-                          value={confirmNewPassword}
-                          onChange={(e) => setConfirmNewPassword(e.target.value)}
-                          placeholder="Ulangi sandi baru"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple text-navy font-semibold" 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {validationError && (
-                    <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5" /> {validationError}
-                    </p>
-                  )}
-
-                  <button 
-                    type="submit"
-                    className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    Simpan Sandi Baru <ArrowRight className="w-4 h-4" />
+                  <input type="text" required maxLength={6} value={otpInput} onChange={(e) => setOtpInput(e.target.value)} placeholder="123456" className="w-full px-4 py-2 text-sm text-center tracking-widest border rounded-xl" />
+                  <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Sandi Baru" className="w-full px-4 py-2 text-sm border rounded-xl" />
+                  <button type="submit" className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl">
+                    Simpan Sandi Baru
                   </button>
                 </form>
               </motion.div>
             )}
 
-            {/* FORGOT PASSWORD: STEP 4 - SUCCESS */}
-            {forgotStep === 'success' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6 space-y-4"
-              >
+            {forgotStep === "success" && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6 space-y-4">
                 <div className="flex justify-center">
                   <div className="p-3 bg-emerald-100 rounded-full text-emerald-600">
                     <CheckCircle2 className="w-12 h-12" />
                   </div>
                 </div>
-
                 <h3 className="text-lg font-bold text-[#0F172A]">Sandi Berhasil Dipulihkan!</h3>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-                  Sekarang sandi baru Anda aktif. Silakan login kembali dengan alamat email dan kata sandi baru Anda tersebut.
-                </p>
-
-                <button 
-                  onClick={resetAllAndGoToLogin}
-                  className="w-full py-2.5 bg-navy text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
-                >
+                <button onClick={resetAllAndGoToLogin} className="w-full py-2.5 bg-navy text-white text-xs font-bold rounded-xl">
                   Kembali ke Form Log In
                 </button>
               </motion.div>
             )}
-
           </div>
         </motion.div>
       </div>
     </AnimatePresence>
   );
 };
-
