@@ -1,5 +1,5 @@
 package com.productivity.backend.task;
 
-public class TaskService {
-    
+public class TaskModel {
+
 }
