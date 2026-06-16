@@ -1,3 +1,4 @@
+/// <reference types="react" />
 import React, { useState, useRef } from 'react';
 import { Card } from './Card';
 import { User, Mail, Shield, Bell, Moon, Sun, LogOut, Camera, Upload, Check, Lock, Key, Volume2, AlertCircle, Plus, Trash2, Edit2, GraduationCap, Award, Briefcase, Calendar, Hash, ShieldAlert, ShieldCheck, Send, RefreshCw } from 'lucide-react';
