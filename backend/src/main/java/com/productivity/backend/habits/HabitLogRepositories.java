@@ -13,4 +13,7 @@ public interface HabitLogRepositories extends JpaRepository<HabitLogModel, UUID>
 
     // Mencari apakah hari ini user sudah check-in untuk habit tersebut (Biar gak bisa double klik)
     boolean existsByHabitIdAndCompletedDate(UUID habitId, LocalDate completedDate);
+
+    // Menghapus semua log check-in milik satu habit (dipanggil sebelum habit dihapus)
+    void deleteByHabitId(UUID habitId);
 }
