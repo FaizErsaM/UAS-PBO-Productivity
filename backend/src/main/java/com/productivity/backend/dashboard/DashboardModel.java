@@ -1,7 +1,10 @@
 package com.productivity.backend.dashboard;
 
+import java.util.UUID;
+
 public class DashboardModel {
 
+    private UUID userId;
     private int totalTask;
     private int completedTask;
     private int pendingTask;
@@ -9,12 +12,21 @@ public class DashboardModel {
 
     public DashboardModel() {}
 
-    public DashboardModel(int totalTask, int completedTask,
+    public DashboardModel(UUID userId, int totalTask, int completedTask,
                           int pendingTask, int totalHabit) {
+        this.userId = userId;
         this.totalTask = totalTask;
         this.completedTask = completedTask;
         this.pendingTask = pendingTask;
         this.totalHabit = totalHabit;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
     }
 
     public int getTotalTask() {
