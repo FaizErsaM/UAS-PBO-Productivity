@@ -63,10 +63,11 @@ public class HabitsService {
 
     @SuppressWarnings("unchecked")
     public String generateHabitWithGemini(String userGoal) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + geminiApiKey;
+        // Pakai gemini-2.5-flash yang punya kuota 5 RPM
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
 
         RestTemplate restTemplate = new RestTemplate();
-        String prompt = "Give me one short, clear, actionable habit name for: " + userGoal;
+        String prompt = "Give me one short, clear, actionable habit name (without any formatting, asterisks, or explanations) for this goal: " + userGoal;
 
         Map<String, Object> requestBody = Map.of(
             "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
@@ -84,7 +85,11 @@ public class HabitsService {
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) body.get("candidates");
                 Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
                 List<Map<String, String>> parts = (List<Map<String, String>>) content.get("parts");
-                return parts.get(0).get("text").trim();
+                // Bersihkan output dari tanda ** dan newline
+                return parts.get(0).get("text").trim()
+                    .replaceAll("\\*\\*", "")
+                    .replaceAll("\\n", " ")
+                    .trim();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -97,7 +102,7 @@ public class HabitsService {
     public void deleteHabit(UUID habitId) {
         HabitsModel habit = habitsRepositories.findById(habitId)
                 .orElseThrow(() -> new RuntimeException("Habit tidak ditemukan!"));
-        habitLogRepositories.deleteByHabitId(habitId); // hapus semua log dulu
-        habitsRepositories.delete(habit); // baru hapus habitnya
+        habitLogRepositories.deleteByHabitId(habitId);
+        habitsRepositories.delete(habit);
     }
 }
