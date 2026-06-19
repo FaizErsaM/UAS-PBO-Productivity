@@ -26,6 +26,10 @@ public class SettingModel {
 
     @Column(name = "occupation")
     private String occupation;
+
+    // 1. CUKUP TAMBAHKAN BARIS INI DI SINI
+    @Column(name = "bio", columnDefinition = "TEXT")
+    private String bio; 
     
     @Column(name = "profile_pic", columnDefinition = "TEXT") 
     private String profilePic; 
@@ -56,7 +60,7 @@ public class SettingModel {
         private String label;
         private String value;
         
-        @Column(name = "icon_name") // Menyesuaikan database icon_name
+        @Column(name = "icon_name") 
         private String iconName;
 
         // Getter & Setter GridItem
@@ -83,6 +87,11 @@ public class SettingModel {
     public void setEmail(String email) { this.email = email; }
     public String getOccupation() { return occupation; }
     public void setOccupation(String occupation) { this.occupation = occupation; }
+
+    // 2. TAMBAHKAN KEDUA FUNGSI GETTER & SETTER BIO INI DI SINI
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
     public String getProfilePic() { return profilePic; }
     public void setProfilePic(String profilePic) { this.profilePic = profilePic; }
     public Boolean getPushEnabled() { return pushEnabled; }

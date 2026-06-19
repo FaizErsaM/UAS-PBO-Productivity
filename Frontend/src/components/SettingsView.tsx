@@ -303,12 +303,30 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       return;
     }
 
+    // Ambil userId dari context (gunakan dummy jika user/Supabase belum siap saat dev)
+    const activeUserId = user?.uid || "dummy-student-123";
+
     executeWithFeedback(async () => {
-      await new Promise(r => setTimeout(r, 800));
+      // PROSES KIRIM KE BACKEND JAVA YANG SEBENARNYA
+      const response = await fetch(`${API_BASE_URL}/change-password?userId=${activeUserId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: currentPassword,
+          newPassword: newPassword
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal memperbarui kata sandi di server.');
+      }
+
+      // Reset form jika sukses
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    }, 'Password Anda telah berhasil diperbarui!');
+    }, 'Password Anda telah berhasil diperbarui di database!');
   };
 
   // --- 3. RETURN JSX INTERFACE ---
