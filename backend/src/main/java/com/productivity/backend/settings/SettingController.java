@@ -6,26 +6,26 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/settings")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}) // Ganti dengan URL frontend Anda
 public class SettingController {
 
     @Autowired
     private SettingService settingService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<SettingModel> getSetting(@PathVariable String userId, @RequestParam String email) {
+    @GetMapping("")
+    public ResponseEntity<SettingModel> getSetting(@RequestParam String userId, @RequestParam String email) {
         SettingModel setting = settingService.getOrCreateSetting(userId, email);
         return ResponseEntity.ok(setting);
     }
 
-    @PutMapping("/{userId}/profile")
-    public ResponseEntity<SettingModel> updateProfile(@PathVariable String userId, @RequestBody SettingModel dataBaru) {
+    @PostMapping("/profile")
+    public ResponseEntity<SettingModel> updateProfile(@RequestParam String userId, @RequestBody SettingModel dataBaru) {
         SettingModel updated = settingService.updateProfile(userId, dataBaru);
         return ResponseEntity.ok(updated);
     }
 
-    @PutMapping("/{userId}/notifications")
-    public ResponseEntity<SettingModel> updateNotifications(@PathVariable String userId, @RequestBody SettingModel dataBaru) {
+    @PostMapping("/notifications")
+    public ResponseEntity<SettingModel> updateNotifications(@RequestParam String userId, @RequestBody SettingModel dataBaru) {
         SettingModel updated = settingService.updateNotifications(userId, dataBaru);
         return ResponseEntity.ok(updated);
     }

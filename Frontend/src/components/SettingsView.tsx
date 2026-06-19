@@ -4,7 +4,7 @@ import { Card } from './Card';
 import { User, Mail, Shield, Bell, Moon, Sun, LogOut, Camera, Upload, Check, Lock, Key, Volume2, AlertCircle, Plus, Trash2, Edit2, GraduationCap, Award, Briefcase, Calendar, Hash, ShieldAlert, ShieldCheck, Send, RefreshCw } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
-const API_BASE_URL = 'http://localhost:8080/api/setting'; 
+const API_BASE_URL = 'http://localhost:8080/api/settings'; 
 
 export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const { 
@@ -183,7 +183,17 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.uid) return;
+    
+    // 1. Ambil UID asli langsung dari state user (Jangan gunakan fallback "1" lagi)
+    const currentUserId = user?.uid; 
+
+    // 2. Validasi ketat: Jika user belum terautentikasi / belum login, hentikan pengiriman
+    if (!currentUserId) {
+      executeWithFeedback(async () => { 
+        throw new Error('Gagal menyimpan: Sesi login Anda kosong atau kedaluwarsa. Silakan Sign Out lalu Sign In kembali.'); 
+      }, '');
+      return;
+    }
 
     const profileData = {
       firstName: firstName,
@@ -193,15 +203,21 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       profileGridItems: profileGridItems
     };
 
+    console.log("Mengirim data profil untuk userId sah:", currentUserId, profileData);
+
     executeWithFeedback(async () => {
-      const response = await fetch(`${API_BASE_URL}/profile?userId=${user.uid}`, {
+      // 3. Kirim menggunakan currentUserId yang sudah dijamin valid (berupa UUID Supabase)
+      const response = await fetch(`${API_BASE_URL}/profile?userId=${currentUserId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileData)
       });
+      
       if (!response.ok) {
         throw new Error('Gagal menyimpan profil ke server backend.');
       }
+      
+      // 4. Sinkronisasi data lokal ke AppContext / Supabase client side
       await saveProfileToDb(firstName, lastName, profilePic, occupation);
     }, 'Informasi pribadi & grid profil berhasil disimpan ke database!');
   };
