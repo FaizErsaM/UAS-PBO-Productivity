@@ -1,6 +1,5 @@
 package com.productivity.backend.settings;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -8,25 +7,23 @@ import org.springframework.stereotype.Service;
 public class SettingService {
 
     @Autowired
-    private DashboardRepository settingRepository;
+    private SettingRepository settingRepository;
 
-    // Ambil data, jika belum ada (user baru), otomatis buatkan data default baru
-    public DashboardModel getOrCreateSetting(String userId, String userEmail) {
+    public SettingModel getOrCreateSetting(String userId, String userEmail) {
         return settingRepository.findByUserId(userId).orElseGet(() -> {
-            DashboardModel newSetting = new DashboardModel();
+            SettingModel newSetting = new SettingModel();
             newSetting.setUserId(userId);
             newSetting.setEmail(userEmail);
             newSetting.setPushEnabled(true);
             newSetting.setSoundEnabled(true);
-            newSetting.setEmailDigestEnabled(true); // Default notifikasi email aktif
+            newSetting.setEmailDigestEnabled(true);
             newSetting.setEmailFrequency("daily");
             return settingRepository.save(newSetting);
         });
     }
 
-    // Memperbarui informasi Tab Profile
-    public DashboardModel updateProfile(String userId, DashboardModel dataBaru) {
-        DashboardModel setting = settingRepository.findByUserId(userId)
+    public SettingModel updateProfile(String userId, SettingModel dataBaru) {
+        SettingModel setting = settingRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("User tidak ditemukan"));
         
         setting.setFirstName(dataBaru.getFirstName());
@@ -39,9 +36,8 @@ public class SettingService {
         return settingRepository.save(setting);
     }
 
-    // Memperbarui informasi Tab Notifikasi Email (Tanpa WhatsApp)
-    public DashboardModel updateNotifications(String userId, DashboardModel dataBaru) {
-        DashboardModel setting = settingRepository.findByUserId(userId)
+    public SettingModel updateNotifications(String userId, SettingModel dataBaru) {
+        SettingModel setting = settingRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("User tidak ditemukan"));
 
         setting.setPushEnabled(dataBaru.getPushEnabled());

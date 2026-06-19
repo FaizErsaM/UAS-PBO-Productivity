@@ -1,11 +1,11 @@
-package com.productivity.backend.settings; // Pastikan folder 'model' huruf kecil jika di laptopmu kecil
+package com.productivity.backend.settings;
 
 import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "settings") // Nama tabel di Supabase tetap 'settings' tidak apa-apa
-public class DashboardModel { // HANS: Nama class diubah sesuai nama file!
+@Table(name = "settings")
+public class SettingModel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,34 +14,49 @@ public class DashboardModel { // HANS: Nama class diubah sesuai nama file!
     @Column(name = "user_id", unique = true, nullable = false)
     private String userId;
 
-    // --- Tab Profile ---
+    // --- Tab Profile (Ditambahkan pemetaan eksplisit ke database) ---
+    @Column(name = "first_name")
     private String firstName;
+
+    @Column(name = "last_name")
     private String lastName;
+
+    @Column(name = "email")
     private String email;
+
+    @Column(name = "occupation")
     private String occupation;
     
-    @Column(columnDefinition = "TEXT") 
+    @Column(name = "profile_pic", columnDefinition = "TEXT") 
     private String profilePic; 
 
-    // --- Tab Notifications (Fokus Email & Push) ---
+    // --- Tab Notifications ---
+    @Column(name = "push_enabled")
     private Boolean pushEnabled;
+
+    @Column(name = "sound_enabled")
     private Boolean soundEnabled;
+
+    @Column(name = "email_digest_enabled")
     private Boolean emailDigestEnabled; 
-    private String emailFrequency;     
+
+    @Column(name = "email_frequency")
+    private String emailFrequency; 
 
     // --- Sub-tabel Otomatis untuk Grid Informasi Profil ---
     @ElementCollection
     @CollectionTable(name = "setting_grid_items", joinColumns = @JoinColumn(name = "setting_id"))
     private List<GridItem> profileGridItems;
 
-    // Constructor harus diganti namanya sesuai nama Class baru
-    public DashboardModel() {} 
+    public SettingModel() {}
 
     @Embeddable
     public static class GridItem {
         private String id;
         private String label;
         private String value;
+        
+        @Column(name = "icon_name") // Menyesuaikan database icon_name
         private String iconName;
 
         // Getter & Setter GridItem
@@ -55,7 +70,7 @@ public class DashboardModel { // HANS: Nama class diubah sesuai nama file!
         public void setIconName(String iconName) { this.iconName = iconName; }
     }
 
-    // --- Getter & Setter Utama (Nama fungsi get/set harus menyesuaikan variabelnya) ---
+    // --- Getter & Setter Utama ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUserId() { return userId; }

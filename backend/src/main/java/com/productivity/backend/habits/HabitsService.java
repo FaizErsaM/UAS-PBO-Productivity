@@ -1,7 +1,9 @@
 package com.productivity.backend.habits;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +22,9 @@ public class HabitsService {
 
     @Autowired
     private HabitLogRepositories habitLogRepositories;
+
+    @Value("${gemini.api.key}")
+    private String geminiApiKey;
 
     public List<HabitsModel> getHabitsByUserId(UUID userId) {
         return habitsRepositories.findByUserId(userId);
@@ -58,11 +63,11 @@ public class HabitsService {
 
     @SuppressWarnings("unchecked")
     public String generateHabitWithGemini(String userGoal) {
-        String apiKey = "YOUR_GEMINI_API_KEY";
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey;
+        // Pakai gemini-2.5-flash yang punya kuota 5 RPM
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
 
         RestTemplate restTemplate = new RestTemplate();
-        String prompt = "Give me one short, clear, actionable habit name for: " + userGoal;
+        String prompt = "Give me one short, clear, actionable habit name (without any formatting, asterisks, or explanations) for this goal: " + userGoal;
 
         Map<String, Object> requestBody = Map.of(
             "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
@@ -80,11 +85,24 @@ public class HabitsService {
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) body.get("candidates");
                 Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
                 List<Map<String, String>> parts = (List<Map<String, String>>) content.get("parts");
-                return parts.get(0).get("text").trim();
+                // Bersihkan output dari tanda ** dan newline
+                return parts.get(0).get("text").trim()
+                    .replaceAll("\\*\\*", "")
+                    .replaceAll("\\n", " ")
+                    .trim();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return "Read a book for 15 minutes";
+    }
+
+    // Menghapus habit beserta semua log check-in nya
+    @Transactional
+    public void deleteHabit(UUID habitId) {
+        HabitsModel habit = habitsRepositories.findById(habitId)
+                .orElseThrow(() -> new RuntimeException("Habit tidak ditemukan!"));
+        habitLogRepositories.deleteByHabitId(habitId);
+        habitsRepositories.delete(habit);
     }
 }

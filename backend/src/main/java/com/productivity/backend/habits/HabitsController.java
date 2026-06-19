@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/habits")
-@CrossOrigin(origins = "*") // Supaya kodingan Frontend TypeScript gak kena CORS error saat manggil backend
+@CrossOrigin(origins = "*")
 public class HabitsController {
 
     @Autowired
@@ -34,7 +35,6 @@ public class HabitsController {
         UUID userId = UUID.fromString(request.get("userId").toString());
         String habitName = request.get("habitName").toString();
         int targetPeriod = Integer.parseInt(request.get("targetPeriod").toString());
-
         return ResponseEntity.ok(habitsService.createNewHabit(userId, habitName, targetPeriod));
     }
 
@@ -45,7 +45,6 @@ public class HabitsController {
             HabitLogModel log = habitsService.markAsDone(habitId);
             return ResponseEntity.ok(log);
         } catch (RuntimeException e) {
-            // Kalau user nge-spam klik di hari yang sama, kirim pesan error ke frontend
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
@@ -56,5 +55,16 @@ public class HabitsController {
         String userGoal = request.get("userGoal");
         String suggestion = habitsService.generateHabitWithGemini(userGoal);
         return ResponseEntity.ok(Map.of("suggestedHabit", suggestion));
+    }
+
+    // 5. Endpoint untuk menghapus habit
+    @DeleteMapping("/{habitId}")
+    public ResponseEntity<?> deleteHabit(@PathVariable UUID habitId) {
+        try {
+            habitsService.deleteHabit(habitId);
+            return ResponseEntity.ok(Map.of("message", "Habit berhasil dihapus!"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }
