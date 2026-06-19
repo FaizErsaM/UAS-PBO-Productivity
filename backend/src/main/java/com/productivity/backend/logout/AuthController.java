@@ -32,6 +32,13 @@ public String test() {
                 "Login berhasil: " + request.getEmail()
         );
     }
+    @PostMapping("/google")
+    public ResponseEntity<String> googleLogin() {
+
+    return ResponseEntity.ok(
+            "Login Google berhasil"
+    );
+}
 
     @PostMapping("/logout")
     public ResponseEntity<String> logout() {
