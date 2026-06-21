@@ -51,7 +51,25 @@ export const Dashboard = ({ onViewChange }: { onViewChange?: (view: string) => v
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      
+    {/* Dashboard Stats dari Backend */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="text-center p-4">
+          <p className="text-3xl font-bold text-navy">{tasks.length}</p>
+          <p className="text-sm text-slate-500 mt-1">Total Task</p>
+        </Card>
+        <Card className="text-center p-4">
+          <p className="text-3xl font-bold text-purple">{tasks.filter(t => t.completed).length}</p>
+          <p className="text-sm text-slate-500 mt-1">Task Selesai</p>
+        </Card>
+        <Card className="text-center p-4">
+          <p className="text-3xl font-bold text-amber-500">{tasks.filter(t => !t.completed).length}</p>
+          <p className="text-sm text-slate-500 mt-1">Task Pending</p>
+        </Card>
+        <Card className="text-center p-4">
+          <p className="text-3xl font-bold text-emerald-500">{habits.length}</p>
+          <p className="text-sm text-slate-500 mt-1">Total Habit</p>
+        </Card>
+      </div>  
       {/* Top Section: Focus & Quick Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         

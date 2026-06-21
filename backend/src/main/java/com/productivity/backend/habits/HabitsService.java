@@ -63,11 +63,21 @@ public class HabitsService {
 
     @SuppressWarnings("unchecked")
     public String generateHabitWithGemini(String userGoal) {
-        // Pakai gemini-2.5-flash yang punya kuota 5 RPM
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
+        // Upgrade ke gemini-3.5-flash yang lebih pintar
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" + geminiApiKey;
 
         RestTemplate restTemplate = new RestTemplate();
-        String prompt = "Give me one short, clear, actionable habit name (without any formatting, asterisks, or explanations) for this goal: " + userGoal;
+
+        // Prompt yang lebih spesifik dan mengikuti bahasa user
+        String prompt = "Kamu adalah AI habit coach. Berikan SATU saran habit yang spesifik, terukur, dan realistis berdasarkan tujuan berikut: \"" + userGoal + "\"\n\n" +
+                "Aturan:\n" +
+                "- Gunakan bahasa yang SAMA dengan bahasa input pengguna (jika Indonesia maka Indonesia, jika Inggris maka Inggris)\n" +
+                "- Format: [frekuensi/waktu] + [aktivitas spesifik] + [durasi/jumlah]\n" +
+                "- Contoh bagus: 'Membaca buku non-fiksi 30 menit setiap malam sebelum tidur'\n" +
+                "- Contoh bagus: 'Exercise at the gym for 45 minutes every morning at 7 AM'\n" +
+                "- JANGAN berikan penjelasan, alasan, atau teks tambahan apapun\n" +
+                "- JANGAN gunakan bullet point, nomor, atau formatting\n" +
+                "- Jawab HANYA dengan nama habitnya saja dalam satu kalimat\n";
 
         Map<String, Object> requestBody = Map.of(
             "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
@@ -85,16 +95,16 @@ public class HabitsService {
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) body.get("candidates");
                 Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
                 List<Map<String, String>> parts = (List<Map<String, String>>) content.get("parts");
-                // Bersihkan output dari tanda ** dan newline
                 return parts.get(0).get("text").trim()
                     .replaceAll("\\*\\*", "")
                     .replaceAll("\\n", " ")
+                    .replaceAll("^[-•*]\\s*", "")
                     .trim();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "Read a book for 15 minutes";
+        return "Membaca buku 30 menit setiap malam sebelum tidur";
     }
 
     // Menghapus habit beserta semua log check-in nya
