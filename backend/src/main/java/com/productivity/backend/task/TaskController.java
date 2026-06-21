@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/tasks")
-@CrossOrigin(origins = "*") // Supaya kodingan Frontend TypeScript gak kena CORS error saat manggil backend
+@CrossOrigin(origins = "http://localhost:5173") // Supaya kodingan Frontend TypeScript gak kena CORS error saat manggil backend
 public class TaskController {
 
     @Autowired

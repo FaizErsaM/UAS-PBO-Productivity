@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/settings")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 public class SettingController {
 
     @Autowired
@@ -25,7 +25,8 @@ public class SettingController {
     }
 
     @PutMapping("/{userId}/notifications")
-    public ResponseEntity<SettingModel> updateNotifications(@PathVariable String userId, @RequestBody SettingModel dataBaru) {
+    public ResponseEntity<SettingModel> updateNotifications(@PathVariable String userId,
+            @RequestBody SettingModel dataBaru) {
         SettingModel updated = settingService.updateNotifications(userId, dataBaru);
         return ResponseEntity.ok(updated);
     }
