@@ -31,11 +31,7 @@ import {
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
-<<<<<<< HEAD
 const API_BASE_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081"}/api/settings`;
-=======
-const API_BASE_URL = 'http://localhost:8080/api/settings'; 
->>>>>>> dcec66e02400a2248777e135458a52f76404327d
 
 export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const {
@@ -269,12 +265,9 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-<<<<<<< HEAD
-    if (!user?.id) return;
-=======
     
     // 1. Ambil UID asli langsung dari state user (Jangan gunakan fallback "1" lagi)
-    const currentUserId = user?.uid; 
+    const currentUserId = user?.id; 
 
     // 2. Validasi ketat: Jika user belum terautentikasi / belum login, hentikan pengiriman
     if (!currentUserId) {
@@ -283,7 +276,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       }, '');
       return;
     }
->>>>>>> dcec66e02400a2248777e135458a52f76404327d
+
 
     // Ubah key objek menjadi snake_case agar dibaca oleh anotasi @JsonProperty Java
     const profileData = {
@@ -298,32 +291,20 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     console.log("Mengirim data profil untuk userId sah:", currentUserId, profileData);
 
     executeWithFeedback(async () => {
-<<<<<<< HEAD
-      const response = await fetch(`${API_BASE_URL}/${user.id}/profile`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileData),
-=======
       // 3. Kirim menggunakan currentUserId yang sudah dijamin valid (berupa UUID Supabase)
       const response = await fetch(`${API_BASE_URL}/profile?userId=${currentUserId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileData)
->>>>>>> dcec66e02400a2248777e135458a52f76404327d
       });
       
       if (!response.ok) {
         throw new Error("Gagal menyimpan profil ke server backend.");
       }
-<<<<<<< HEAD
-      await saveProfileToDb(firstName, "-", profilePic, occupation);
-    }, "Informasi pribadi & grid profil berhasil disimpan ke database!");
-=======
       
       // 4. Sinkronisasi data lokal ke AppContext / Supabase client side
       await saveProfileToDb(firstName, lastName, profilePic, occupation);
     }, 'Informasi pribadi & grid profil berhasil disimpan ke database!');
->>>>>>> dcec66e02400a2248777e135458a52f76404327d
   };
 
   const handleSavePreferences = () => {
@@ -433,16 +414,9 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     }
 
     // Ambil userId dari context (gunakan dummy jika user/Supabase belum siap saat dev)
-    const activeUserId = user?.uid || "dummy-student-123";
+    const activeUserId = user?.id || "dummy-student-123";
 
     executeWithFeedback(async () => {
-<<<<<<< HEAD
-      await new Promise((r) => setTimeout(r, 800));
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    }, "Password Anda telah berhasil diperbarui!");
-=======
       // PROSES KIRIM KE BACKEND JAVA YANG SEBENARNYA
       const response = await fetch(`${API_BASE_URL}/change-password?userId=${activeUserId}`, {
         method: 'POST',
@@ -463,7 +437,6 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       setNewPassword("");
       setConfirmPassword("");
     }, 'Password Anda telah berhasil diperbarui di database!');
->>>>>>> dcec66e02400a2248777e135458a52f76404327d
   };
 
   // --- 3. RETURN JSX INTERFACE ---

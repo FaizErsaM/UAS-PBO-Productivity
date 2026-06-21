@@ -10,7 +10,7 @@ import { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
 // URL Backend Spring Boot Pangeran
-const API_BASE_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080"}/api`;
+const API_BASE_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081"}/api`;
 
 type FeedbackStatus = "idle" | "loading" | "success" | "error";
 interface FeedbackState {
