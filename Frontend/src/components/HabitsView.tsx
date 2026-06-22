@@ -23,7 +23,7 @@ const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/habits`;
 
 export const HabitsView = () => {
   const { user } = useAppContext();
-  const userId = user?.uuid ?? "00000000-0000-0000-0000-000000000001";
+  const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
 
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
