@@ -11,18 +11,18 @@ interface Habit {
   targetPeriod: number;
   currentStreak: number;
   createdAt: string;
+  lastCompletedDate?: string;
 }
 
-// Tipe notifikasi
 interface Notification {
   message: string;
   type: "success" | "error" | "warning";
 }
 
-const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/habits`;
+const API_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081/api"}/habits`;
 
 export const HabitsView = () => {
-  const { user } = useAppContext();
+  const { user, setHabits: setContextHabits } = useAppContext();
   const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
 
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -37,13 +37,9 @@ export const HabitsView = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState("");
 
-  // State untuk notifikasi cantik
   const [notification, setNotification] = useState<Notification | null>(null);
-
-  // State untuk konfirmasi hapus
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Fungsi tampilkan notifikasi — otomatis hilang setelah 3 detik
   const showNotification = (
     message: string,
     type: "success" | "error" | "warning",
@@ -62,6 +58,7 @@ export const HabitsView = () => {
       const response = await fetch(`${API_URL}/user/${userId}`);
       const data = await response.json();
       setHabits(data);
+      setContextHabits(data); // sync ke AppContext
     } catch (error) {
       console.error("Gagal mengambil data habits:", error);
     } finally {
@@ -83,7 +80,7 @@ export const HabitsView = () => {
         }),
       });
       if (response.ok) {
-        await fetchHabits();
+        await fetchHabits(); // ini juga sync ke AppContext
         setIsModalOpen(false);
         setHabitName("");
         setTargetPeriod(30);
@@ -128,7 +125,7 @@ export const HabitsView = () => {
         }),
       });
       if (response.ok) {
-        await fetchHabits();
+        await fetchHabits(); // ini juga sync ke AppContext
         setIsModalOpen(false);
         setAiGoal("");
         setAiSuggestion("");
@@ -146,11 +143,10 @@ export const HabitsView = () => {
         method: "POST",
       });
       if (response.ok) {
-        await fetchHabits();
+        await fetchHabits(); // ini juga sync ke AppContext
         showNotification("Check-in berhasil! Streak bertambah 🔥", "success");
       } else {
         const error = await response.json();
-        // Ganti alert() dengan notifikasi warning yang cantik
         showNotification(error.message, "warning");
       }
     } catch (error) {
@@ -160,7 +156,6 @@ export const HabitsView = () => {
   };
 
   const handleDeleteHabit = async (habitId: string) => {
-    // Ganti confirm() dengan konfirmasi custom
     setDeleteConfirm(habitId);
   };
 
@@ -171,7 +166,7 @@ export const HabitsView = () => {
         method: "DELETE",
       });
       if (response.ok) {
-        await fetchHabits();
+        await fetchHabits(); // ini juga sync ke AppContext
         showNotification("Habit berhasil dihapus!", "success");
       }
     } catch (error) {
@@ -184,7 +179,6 @@ export const HabitsView = () => {
 
   return (
     <div className="space-y-6">
-      {/* Notifikasi cantik — muncul di pojok kanan atas */}
       {notification && (
         <div
           className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all duration-300 ${
@@ -214,7 +208,6 @@ export const HabitsView = () => {
         </div>
       )}
 
-      {/* Modal konfirmasi hapus yang cantik */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-2xl shadow-xl p-6 mx-4 max-w-sm w-full">
@@ -225,8 +218,7 @@ export const HabitsView = () => {
               <h3 className="font-semibold text-navy">Hapus Habit?</h3>
             </div>
             <p className="text-sm text-slate-500 mb-5">
-              Habit dan semua data check-in akan dihapus permanen. Tidak bisa
-              dikembalikan!
+              Habit dan semua data check-in akan dihapus permanen. Tidak bisa dikembalikan!
             </p>
             <div className="flex gap-3">
               <button
@@ -249,10 +241,7 @@ export const HabitsView = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-navy">Habit Tracker</h2>
         <button
-          onClick={() => {
-            setIsModalOpen(true);
-            setModalTab("ai");
-          }}
+          onClick={() => { setIsModalOpen(true); setModalTab("ai"); }}
           className="px-4 py-2 text-sm bg-purple text-white rounded-xl shadow-sm hover:bg-purple-light transition-colors font-medium"
         >
           + New Habit
@@ -271,10 +260,7 @@ export const HabitsView = () => {
             Mulai bangun kebiasaan positifmu sekarang!
           </p>
           <button
-            onClick={() => {
-              setIsModalOpen(true);
-              setModalTab("ai");
-            }}
+            onClick={() => { setIsModalOpen(true); setModalTab("ai"); }}
             className="px-4 py-2 text-sm bg-purple text-white rounded-xl shadow-sm hover:bg-purple-light transition-colors font-medium"
           >
             + Buat Habit Pertama
@@ -412,9 +398,7 @@ export const HabitsView = () => {
                   className="flex-1 px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/50"
                   value={aiGoal}
                   onChange={(e) => setAiGoal(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && handleGetAiSuggestion()
-                  }
+                  onKeyDown={(e) => e.key === "Enter" && handleGetAiSuggestion()}
                   placeholder="contoh: Saya ingin jadi software engineer"
                 />
                 <button
