@@ -37,6 +37,7 @@ interface AppContextType {
   addHabit: (habit: Omit<Habit, "id">) => Promise<void>;
   toggleHabitForToday: (id: string) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
+  setHabits: (habits: Habit[]) => void;
   executeWithFeedback: (
     action: () => void | Promise<void>,
     successMessage: string,
@@ -255,10 +256,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const addHabit = async (habit: Omit<Habit, "id">) => {
     if (!user) throw new Error("User tidak terautentikasi.");
     await executeWithFeedback(async () => {
-      const response = await fetch(`${API_BASE_URL}/habits`, {
+      const response = await fetch(`${API_BASE_URL}/habits/manual`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ ...habit, userId: user.id }),
+        body: JSON.stringify({
+          userId: user.id,
+          habitName: (habit as any).habitName,
+          targetPeriod: (habit as any).targetPeriod ?? 30,
+        }),
       });
       if (!response.ok) throw new Error("Gagal menyimpan habit");
 
@@ -272,26 +277,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const habitObj = habits.find((h) => h.id === id);
     if (!habitObj) return;
 
-    const today = new Date().toISOString().split("T")[0];
-    const isCompletedToday = habitObj.lastCompletedDate === today;
-
-    const updatedData = {
-      progress: isCompletedToday
-        ? Math.max(0, habitObj.progress - 1)
-        : habitObj.progress + 1,
-      lastCompletedDate: isCompletedToday ? "" : today,
-    };
-
     await executeWithFeedback(async () => {
-      const response = await fetch(`${API_BASE_URL}/habits/${id}`, {
-        method: "PUT",
+      const response = await fetch(`${API_BASE_URL}/habits/${id}/done`, {
+        method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(updatedData),
       });
-      if (!response.ok) throw new Error("Gagal memperbarui habit");
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Gagal memperbarui habit");
+      }
 
       setHabits((prev) =>
-        prev.map((h) => (h.id === id ? { ...h, ...updatedData } : h)),
+        prev.map((h) =>
+          h.id === id
+            ? {
+                ...h,
+                currentStreak: h.currentStreak + 1,
+                lastCompletedDate: new Date().toISOString().split("T")[0],
+              }
+            : h,
+        ),
       );
     }, "Habit diperbarui");
   };
@@ -423,6 +428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         addHabit,
         toggleHabitForToday,
         deleteHabit,
+        setHabits,
         executeWithFeedback,
         user,
         authLoading,
