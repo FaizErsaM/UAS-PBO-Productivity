@@ -9,6 +9,7 @@ import com.productivity.backend.user.UserRepository;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/settings")
@@ -21,23 +22,20 @@ public class SettingController {
     @Autowired
     private UserRepository userRepository;
 
-    // 1. Mengambil data setting (Parameter email dibuat opsional/tidak wajib agar
-    // tidak memicu eror)
-    @GetMapping("")
-    public ResponseEntity<SettingModel> getSetting(@RequestParam String userId,
-            @RequestParam(required = false) String email) {
-        SettingModel setting = settingService.getOrCreateSetting(userId, email);
+    @GetMapping("/{userId}")
+    public ResponseEntity<SettingModel> getSetting(@PathVariable UUID userId) {
+        SettingModel setting = settingService.getOrCreateSetting(userId);
         return ResponseEntity.ok(setting);
     }
 
     // 2. Mengubah password dengan memanfaatkan data email dari tabel settings
-    @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestParam String userId, @RequestBody Map<String, String> request) {
+    @PostMapping("/change-password/{userId}")
+    public ResponseEntity<?> changePassword(@PathVariable UUID userId, @RequestBody Map<String, String> request) {
         String currentPassword = request.get("currentPassword");
         String newPassword = request.get("newPassword");
 
         // Ambil data settings berdasarkan userId untuk mendapatkan email yang tersimpan
-        SettingModel setting = settingService.getOrCreateSetting(userId, null);
+        SettingModel setting = settingService.getOrCreateSetting(userId);
         String emailUser = setting.getEmail();
 
         if (emailUser == null || emailUser.isEmpty()) {
@@ -67,13 +65,13 @@ public class SettingController {
     }
 
     @PostMapping("/profile")
-    public ResponseEntity<SettingModel> updateProfile(@RequestParam String userId, @RequestBody SettingModel dataBaru) {
+    public ResponseEntity<SettingModel> updateProfile(@PathVariable UUID userId, @RequestBody SettingModel dataBaru) {
         SettingModel updated = settingService.updateProfile(userId, dataBaru);
         return ResponseEntity.ok(updated);
     }
 
     @PostMapping("/notifications")
-    public ResponseEntity<SettingModel> updateNotifications(@RequestParam String userId,
+    public ResponseEntity<SettingModel> updateNotifications(@PathVariable UUID userId,
             @RequestBody SettingModel dataBaru) {
         SettingModel updated = settingService.updateNotifications(userId, dataBaru);
         return ResponseEntity.ok(updated);

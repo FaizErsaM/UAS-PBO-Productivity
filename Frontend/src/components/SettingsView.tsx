@@ -104,7 +104,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     if (user?.id && user?.email) {
       setEmail(user.email);
 
-      fetch(`${API_BASE_URL}/${user.id}?email=${user.email}`)
+      fetch(`${API_BASE_URL}/${user.id}`)
         .then((response) => response.json())
         .then((data) => {
           // Ganti dari camelCase menjadi snake_case sesuai payload Postman Anda
@@ -265,18 +265,19 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 1. Ambil UID asli langsung dari state user (Jangan gunakan fallback "1" lagi)
-    const currentUserId = user?.id; 
+    const currentUserId = user?.id;
 
     // 2. Validasi ketat: Jika user belum terautentikasi / belum login, hentikan pengiriman
     if (!currentUserId) {
-      executeWithFeedback(async () => { 
-        throw new Error('Gagal menyimpan: Sesi login Anda kosong atau kedaluwarsa. Silakan Sign Out lalu Sign In kembali.'); 
-      }, '');
+      executeWithFeedback(async () => {
+        throw new Error(
+          "Gagal menyimpan: Sesi login Anda kosong atau kedaluwarsa. Silakan Sign Out lalu Sign In kembali.",
+        );
+      }, "");
       return;
     }
-
 
     // Ubah key objek menjadi snake_case agar dibaca oleh anotasi @JsonProperty Java
     const profileData = {
@@ -288,23 +289,30 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       profile_grid_items: profileGridItems,
     };
 
-    console.log("Mengirim data profil untuk userId sah:", currentUserId, profileData);
+    console.log(
+      "Mengirim data profil untuk userId sah:",
+      currentUserId,
+      profileData,
+    );
 
     executeWithFeedback(async () => {
       // 3. Kirim menggunakan currentUserId yang sudah dijamin valid (berupa UUID Supabase)
-      const response = await fetch(`${API_BASE_URL}/profile?userId=${currentUserId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profileData)
-      });
-      
+      const response = await fetch(
+        `${API_BASE_URL}/profile?userId=${currentUserId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profileData),
+        },
+      );
+
       if (!response.ok) {
         throw new Error("Gagal menyimpan profil ke server backend.");
       }
-      
+
       // 4. Sinkronisasi data lokal ke AppContext / Supabase client side
       await saveProfileToDb(firstName, lastName, profilePic, occupation);
-    }, 'Informasi pribadi & grid profil berhasil disimpan ke database!');
+    }, "Informasi pribadi & grid profil berhasil disimpan ke database!");
   };
 
   const handleSavePreferences = () => {
@@ -418,25 +426,30 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
     executeWithFeedback(async () => {
       // PROSES KIRIM KE BACKEND JAVA YANG SEBENARNYA
-      const response = await fetch(`${API_BASE_URL}/change-password?userId=${activeUserId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentPassword: currentPassword,
-          newPassword: newPassword
-        })
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/change-password?userId=${activeUserId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+          }),
+        },
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Gagal memperbarui kata sandi di server.');
+        throw new Error(
+          errorData.message || "Gagal memperbarui kata sandi di server.",
+        );
       }
 
       // Reset form jika sukses
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    }, 'Password Anda telah berhasil diperbarui di database!');
+    }, "Password Anda telah berhasil diperbarui di database!");
   };
 
   // --- 3. RETURN JSX INTERFACE ---
