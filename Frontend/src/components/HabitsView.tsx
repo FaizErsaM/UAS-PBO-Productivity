@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Card } from './Card';
-import { Target, Plus, Trash2, CheckCircle, XCircle, X } from 'lucide-react';
-import { Modal } from './Modal';
-import { useAppContext } from '../context/AppContext';
+import React, { useState, useEffect } from "react";
+import { Card } from "./Card";
+import { Target, Plus, Trash2, CheckCircle, XCircle, X } from "lucide-react";
+import { Modal } from "./Modal";
+import { useAppContext } from "../context/AppContext";
 
 interface Habit {
   id: string;
@@ -16,35 +16,38 @@ interface Habit {
 // Tipe notifikasi
 interface Notification {
   message: string;
-  type: 'success' | 'error' | 'warning';
+  type: "success" | "error" | "warning";
 }
 
-const API_URL = 'http://localhost:8080/api/habits';
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/habits`;
 
 export const HabitsView = () => {
   const { user } = useAppContext();
-  const userId = user?.uid ?? '00000000-0000-0000-0000-000000000001';
+  const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
 
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTab, setModalTab] = useState<'manual' | 'ai'>('ai');
+  const [modalTab, setModalTab] = useState<"manual" | "ai">("ai");
 
-  const [habitName, setHabitName] = useState('');
+  const [habitName, setHabitName] = useState("");
   const [targetPeriod, setTargetPeriod] = useState(30);
 
-  const [aiGoal, setAiGoal] = useState('');
+  const [aiGoal, setAiGoal] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState('');
+  const [aiSuggestion, setAiSuggestion] = useState("");
 
   // State untuk notifikasi cantik
   const [notification, setNotification] = useState<Notification | null>(null);
-  
+
   // State untuk konfirmasi hapus
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Fungsi tampilkan notifikasi — otomatis hilang setelah 3 detik
-  const showNotification = (message: string, type: 'success' | 'error' | 'warning') => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning",
+  ) => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   };
@@ -60,7 +63,7 @@ export const HabitsView = () => {
       const data = await response.json();
       setHabits(data);
     } catch (error) {
-      console.error('Gagal mengambil data habits:', error);
+      console.error("Gagal mengambil data habits:", error);
     } finally {
       setIsLoading(false);
     }
@@ -71,42 +74,42 @@ export const HabitsView = () => {
     if (!habitName.trim()) return;
     try {
       const response = await fetch(`${API_URL}/manual`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: userId,
           habitName: habitName,
-          targetPeriod: targetPeriod
-        })
+          targetPeriod: targetPeriod,
+        }),
       });
       if (response.ok) {
         await fetchHabits();
         setIsModalOpen(false);
-        setHabitName('');
+        setHabitName("");
         setTargetPeriod(30);
-        showNotification('Habit berhasil ditambahkan! 🎯', 'success');
+        showNotification("Habit berhasil ditambahkan! 🎯", "success");
       }
     } catch (error) {
-      console.error('Gagal membuat habit:', error);
-      showNotification('Gagal membuat habit. Coba lagi!', 'error');
+      console.error("Gagal membuat habit:", error);
+      showNotification("Gagal membuat habit. Coba lagi!", "error");
     }
   };
 
   const handleGetAiSuggestion = async () => {
     if (!aiGoal.trim()) return;
     setIsGenerating(true);
-    setAiSuggestion('');
+    setAiSuggestion("");
     try {
       const response = await fetch(`${API_URL}/ai-suggest`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userGoal: aiGoal })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userGoal: aiGoal }),
       });
       const data = await response.json();
       setAiSuggestion(data.suggestedHabit);
     } catch (error) {
-      console.error('Gagal mendapat saran AI:', error);
-      showNotification('Gagal mendapat saran AI. Coba lagi!', 'error');
+      console.error("Gagal mendapat saran AI:", error);
+      showNotification("Gagal mendapat saran AI. Coba lagi!", "error");
     } finally {
       setIsGenerating(false);
     }
@@ -116,43 +119,43 @@ export const HabitsView = () => {
     if (!aiSuggestion) return;
     try {
       const response = await fetch(`${API_URL}/manual`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: userId,
           habitName: aiSuggestion,
-          targetPeriod: 30
-        })
+          targetPeriod: 30,
+        }),
       });
       if (response.ok) {
         await fetchHabits();
         setIsModalOpen(false);
-        setAiGoal('');
-        setAiSuggestion('');
-        showNotification('Habit dari AI berhasil ditambahkan! 🤖', 'success');
+        setAiGoal("");
+        setAiSuggestion("");
+        showNotification("Habit dari AI berhasil ditambahkan! 🤖", "success");
       }
     } catch (error) {
-      console.error('Gagal menambah habit dari AI:', error);
-      showNotification('Gagal menambah habit. Coba lagi!', 'error');
+      console.error("Gagal menambah habit dari AI:", error);
+      showNotification("Gagal menambah habit. Coba lagi!", "error");
     }
   };
 
   const handleMarkDone = async (habitId: string) => {
     try {
       const response = await fetch(`${API_URL}/${habitId}/done`, {
-        method: 'POST'
+        method: "POST",
       });
       if (response.ok) {
         await fetchHabits();
-        showNotification('Check-in berhasil! Streak bertambah 🔥', 'success');
+        showNotification("Check-in berhasil! Streak bertambah 🔥", "success");
       } else {
         const error = await response.json();
         // Ganti alert() dengan notifikasi warning yang cantik
-        showNotification(error.message, 'warning');
+        showNotification(error.message, "warning");
       }
     } catch (error) {
-      console.error('Gagal mark as done:', error);
-      showNotification('Gagal check-in. Coba lagi!', 'error');
+      console.error("Gagal mark as done:", error);
+      showNotification("Gagal check-in. Coba lagi!", "error");
     }
   };
 
@@ -165,15 +168,15 @@ export const HabitsView = () => {
     if (!deleteConfirm) return;
     try {
       const response = await fetch(`${API_URL}/${deleteConfirm}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
       if (response.ok) {
         await fetchHabits();
-        showNotification('Habit berhasil dihapus!', 'success');
+        showNotification("Habit berhasil dihapus!", "success");
       }
     } catch (error) {
-      console.error('Gagal hapus habit:', error);
-      showNotification('Gagal hapus habit. Coba lagi!', 'error');
+      console.error("Gagal hapus habit:", error);
+      showNotification("Gagal hapus habit. Coba lagi!", "error");
     } finally {
       setDeleteConfirm(null);
     }
@@ -181,19 +184,31 @@ export const HabitsView = () => {
 
   return (
     <div className="space-y-6">
-
       {/* Notifikasi cantik — muncul di pojok kanan atas */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all duration-300 ${
-          notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-          notification.type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-          'bg-amber-50 text-amber-700 border border-amber-200'
-        }`}>
-          {notification.type === 'success' && <CheckCircle className="w-4 h-4 shrink-0" />}
-          {notification.type === 'error' && <XCircle className="w-4 h-4 shrink-0" />}
-          {notification.type === 'warning' && <XCircle className="w-4 h-4 shrink-0" />}
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all duration-300 ${
+            notification.type === "success"
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : notification.type === "error"
+                ? "bg-rose-50 text-rose-700 border border-rose-200"
+                : "bg-amber-50 text-amber-700 border border-amber-200"
+          }`}
+        >
+          {notification.type === "success" && (
+            <CheckCircle className="w-4 h-4 shrink-0" />
+          )}
+          {notification.type === "error" && (
+            <XCircle className="w-4 h-4 shrink-0" />
+          )}
+          {notification.type === "warning" && (
+            <XCircle className="w-4 h-4 shrink-0" />
+          )}
           <span>{notification.message}</span>
-          <button onClick={() => setNotification(null)} className="ml-1 opacity-60 hover:opacity-100">
+          <button
+            onClick={() => setNotification(null)}
+            className="ml-1 opacity-60 hover:opacity-100"
+          >
             <X className="w-3 h-3" />
           </button>
         </div>
@@ -209,7 +224,10 @@ export const HabitsView = () => {
               </div>
               <h3 className="font-semibold text-navy">Hapus Habit?</h3>
             </div>
-            <p className="text-sm text-slate-500 mb-5">Habit dan semua data check-in akan dihapus permanen. Tidak bisa dikembalikan!</p>
+            <p className="text-sm text-slate-500 mb-5">
+              Habit dan semua data check-in akan dihapus permanen. Tidak bisa
+              dikembalikan!
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
@@ -231,7 +249,10 @@ export const HabitsView = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-navy">Habit Tracker</h2>
         <button
-          onClick={() => { setIsModalOpen(true); setModalTab('ai'); }}
+          onClick={() => {
+            setIsModalOpen(true);
+            setModalTab("ai");
+          }}
           className="px-4 py-2 text-sm bg-purple text-white rounded-xl shadow-sm hover:bg-purple-light transition-colors font-medium"
         >
           + New Habit
@@ -246,9 +267,14 @@ export const HabitsView = () => {
             <Target className="w-8 h-8 text-purple" />
           </div>
           <h3 className="font-semibold text-navy mb-1">Belum ada habit</h3>
-          <p className="text-sm text-slate-400 mb-4">Mulai bangun kebiasaan positifmu sekarang!</p>
+          <p className="text-sm text-slate-400 mb-4">
+            Mulai bangun kebiasaan positifmu sekarang!
+          </p>
           <button
-            onClick={() => { setIsModalOpen(true); setModalTab('ai'); }}
+            onClick={() => {
+              setIsModalOpen(true);
+              setModalTab("ai");
+            }}
             className="px-4 py-2 text-sm bg-purple text-white rounded-xl shadow-sm hover:bg-purple-light transition-colors font-medium"
           >
             + Buat Habit Pertama
@@ -256,8 +282,11 @@ export const HabitsView = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {habits.map(habit => {
-            const percent = Math.min(100, Math.round((habit.currentStreak / habit.targetPeriod) * 100));
+          {habits.map((habit) => {
+            const percent = Math.min(
+              100,
+              Math.round((habit.currentStreak / habit.targetPeriod) * 100),
+            );
             return (
               <Card key={habit.id} className="flex flex-col relative group">
                 <button
@@ -295,7 +324,7 @@ export const HabitsView = () => {
                   <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden mt-1">
                     <div
                       style={{ width: `${percent}%` }}
-                      className={`h-full ${percent >= 100 ? 'bg-emerald-500' : 'bg-purple'} transition-all duration-300`}
+                      className={`h-full ${percent >= 100 ? "bg-emerald-500" : "bg-purple"} transition-all duration-300`}
                     />
                   </div>
                 </div>
@@ -305,46 +334,69 @@ export const HabitsView = () => {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Buat Habit Baru">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Buat Habit Baru"
+      >
         <div className="flex border-b border-slate-200 mb-6">
           <button
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${modalTab === 'ai' ? 'text-purple border-b-2 border-purple' : 'text-slate-500'}`}
-            onClick={() => setModalTab('ai')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${modalTab === "ai" ? "text-purple border-b-2 border-purple" : "text-slate-500"}`}
+            onClick={() => setModalTab("ai")}
           >
             AI Assistant
           </button>
           <button
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${modalTab === 'manual' ? 'text-purple border-b-2 border-purple' : 'text-slate-500'}`}
-            onClick={() => setModalTab('manual')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${modalTab === "manual" ? "text-purple border-b-2 border-purple" : "text-slate-500"}`}
+            onClick={() => setModalTab("manual")}
           >
             Manual Entry
           </button>
         </div>
 
-        {modalTab === 'manual' ? (
+        {modalTab === "manual" ? (
           <form onSubmit={handleAddManualHabit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Nama Habit *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Nama Habit *
+              </label>
               <input
-                required autoFocus type="text"
+                required
+                autoFocus
+                type="text"
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/50"
                 value={habitName}
-                onChange={e => setHabitName(e.target.value)}
+                onChange={(e) => setHabitName(e.target.value)}
                 placeholder="contoh: Baca buku 30 menit"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Target (Hari) *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Target (Hari) *
+              </label>
               <input
-                required type="number" min="1"
+                required
+                type="number"
+                min="1"
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/50"
                 value={targetPeriod}
-                onChange={e => setTargetPeriod(parseInt(e.target.value) || 1)}
+                onChange={(e) => setTargetPeriod(parseInt(e.target.value) || 1)}
               />
             </div>
             <div className="pt-4 flex justify-end gap-3">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm text-slate-600">Cancel</button>
-              <button type="submit" className="px-4 py-2 text-sm bg-purple text-white rounded-xl">Buat Habit</button>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-sm text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm bg-purple text-white rounded-xl"
+              >
+                Buat Habit
+              </button>
             </div>
           </form>
         ) : (
@@ -355,26 +407,32 @@ export const HabitsView = () => {
               </label>
               <div className="flex gap-2">
                 <input
-                  autoFocus type="text"
+                  autoFocus
+                  type="text"
                   className="flex-1 px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/50"
                   value={aiGoal}
-                  onChange={e => setAiGoal(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleGetAiSuggestion()}
+                  onChange={(e) => setAiGoal(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && handleGetAiSuggestion()
+                  }
                   placeholder="contoh: Saya ingin jadi software engineer"
                 />
                 <button
-                  type="button" onClick={handleGetAiSuggestion}
+                  type="button"
+                  onClick={handleGetAiSuggestion}
                   disabled={isGenerating || !aiGoal.trim()}
                   className="px-4 py-2 text-sm bg-slate-900 text-white rounded-xl disabled:opacity-50"
                 >
-                  {isGenerating ? 'Loading...' : 'Generate'}
+                  {isGenerating ? "Loading..." : "Generate"}
                 </button>
               </div>
             </div>
 
             {aiSuggestion && (
               <div className="p-4 bg-purple/5 border border-purple/20 rounded-xl">
-                <p className="text-sm font-medium text-slate-700 mb-1">Saran AI:</p>
+                <p className="text-sm font-medium text-slate-700 mb-1">
+                  Saran AI:
+                </p>
                 <p className="text-navy font-semibold">{aiSuggestion}</p>
                 <button
                   onClick={handleAddAiHabit}
@@ -386,7 +444,12 @@ export const HabitsView = () => {
             )}
 
             <div className="pt-4 flex justify-end border-t border-slate-100">
-              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm text-slate-600">Tutup</button>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-sm text-slate-600"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         )}

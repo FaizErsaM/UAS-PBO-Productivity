@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/habits")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 public class HabitsController {
 
     @Autowired
@@ -29,12 +29,21 @@ public class HabitsController {
         return ResponseEntity.ok(habitsService.getHabitsByUserId(userId));
     }
 
-    // 2. Endpoint untuk tab "Manual Entry" (Membuat habit baru secara manual)
+    // 2. Endpoint untuk tab "Manual Entry" - menggunakan DTO CreateHabitRequest (SRP)
     @PostMapping("/manual")
-    public ResponseEntity<HabitsModel> createManualHabit(@RequestBody Map<String, Object> request) {
-        UUID userId = UUID.fromString(request.get("userId").toString());
-        String habitName = request.get("habitName").toString();
-        int targetPeriod = Integer.parseInt(request.get("targetPeriod").toString());
+    public ResponseEntity<HabitsModel> createManualHabit(@RequestBody CreateHabitRequest request) {
+        UUID userId = UUID.fromString(request.getUserId());
+        String habitName = request.getHabitName();
+        int targetPeriod = request.getTargetPeriod();
+        return ResponseEntity.ok(habitsService.createNewHabit(userId, habitName, targetPeriod));
+    }
+
+    // Endpoint kompatibel dengan AppContext.tsx buatan Adit (POST /api/habits)
+    @PostMapping
+    public ResponseEntity<HabitsModel> createHabit(@RequestBody CreateHabitRequest request) {
+        UUID userId = UUID.fromString(request.getUserId());
+        String habitName = request.getHabitName();
+        int targetPeriod = request.getTargetPeriod();
         return ResponseEntity.ok(habitsService.createNewHabit(userId, habitName, targetPeriod));
     }
 

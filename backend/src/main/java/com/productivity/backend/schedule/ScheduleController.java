@@ -11,7 +11,11 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/schedule")
+<<<<<<< HEAD
 @CrossOrigin(origins = "*") 
+=======
+@CrossOrigin(origins = "http://localhost:5173") // Mengizinkan React mengakses API ini dari port yang berbeda
+>>>>>>> 516f98d04740b177294a1b649394619638d2e851
 public class ScheduleController {
 
     @Autowired

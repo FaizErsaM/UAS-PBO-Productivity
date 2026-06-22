@@ -1,0 +1,131 @@
+package com.productivity.backend.auth;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import com.productivity.backend.user.User;
+import com.productivity.backend.user.UserRepository;
+import com.productivity.backend.settings.SettingModel;
+import com.productivity.backend.settings.SettingRepository;
+
+import java.util.Optional;
+import java.util.List;
+import java.util.UUID;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final SettingRepository settingRepository;
+    private final JwtUtil jwtUtil;
+
+    // Dependency Injection via Constructor
+    public AuthService(UserRepository userRepository, SettingRepository settingRepository, JwtUtil jwtUtil) {
+        this.userRepository = userRepository;
+        this.settingRepository = settingRepository;
+        this.jwtUtil = jwtUtil;
+    }
+
+    public ResponseEntity<?> register(RegisterRequest request) {
+        // 1. Validasi jika email sudah digunakan
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+        if (existingUser.isPresent()) {
+            return ResponseEntity.badRequest().body("Email sudah digunakan");
+        }
+
+        // 2. Simpan data ke tabel 'users'
+        User user = new User();
+        user.setUsername(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+        User savedUser = userRepository.save(user);
+
+        System.out.println("USER TERSIMPAN = " + savedUser.getEmail());
+
+        // 3. Simpan data default ke tabel 'settings' terikat dengan UUID user baru
+        SettingModel setting = new SettingModel();
+        setting.setUserId(savedUser.getId());
+        setting.setFirstName(request.getName());
+        setting.setEmail(savedUser.getEmail());
+        setting.setPushEnabled(true);
+        setting.setSoundEnabled(true);
+        setting.setEmailDigestEnabled(false);
+        setting.setEmailFrequency("weekly");
+
+        // --- TAMBAHKAN LOGIKA GRID DUMMY DI SINI ---
+        List<SettingModel.GridItem> defaultGrids = new ArrayList<>();
+
+        SettingModel.GridItem univ = new SettingModel.GridItem();
+        univ.setId(UUID.randomUUID().toString());
+        univ.setLabel("Universitas");
+        univ.setValue("-");
+        univ.setIconName("GraduationCap");
+        defaultGrids.add(univ);
+
+        SettingModel.GridItem angkatan = new SettingModel.GridItem();
+        angkatan.setId(UUID.randomUUID().toString());
+        angkatan.setLabel("Angkatan / Tahun");
+        angkatan.setValue("-");
+        angkatan.setIconName("Calendar");
+        defaultGrids.add(angkatan);
+
+        SettingModel.GridItem jurusan = new SettingModel.GridItem();
+        jurusan.setId(UUID.randomUUID().toString());
+        jurusan.setLabel("Jurusan / Prodi");
+        jurusan.setValue("-");
+        jurusan.setIconName("Briefcase");
+        defaultGrids.add(jurusan);
+
+        SettingModel.GridItem ipk = new SettingModel.GridItem();
+        ipk.setId(UUID.randomUUID().toString());
+        ipk.setLabel("Target IPK");
+        ipk.setValue("-");
+        ipk.setIconName("Award");
+        defaultGrids.add(ipk);
+
+        // Masukkan daftar template ini ke dalam setting pengguna baru
+        setting.setProfileGridItems(defaultGrids);
+        // -------------------------------------------
+
+        settingRepository.save(setting);
+
+        return ResponseEntity.ok("Register berhasil");
+    }
+
+    public ResponseEntity<?> login(LoginRequest request) {
+        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email tidak ditemukan"));
+        }
+
+        User user = userOptional.get();
+
+        if (!user.getPassword().equals(request.getPassword())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Password salah"));
+        }
+
+        // 1. Buat Token JWT menggunakan email user
+        String token = jwtUtil.generateToken(user.getEmail());
+
+        // 2. Bungkus response ke dalam Map/JSON
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Login berhasil");
+        response.put("token", token);
+
+        // Menyertakan info user penting untuk disimpan di local storage frontend
+        Map<String, String> userData = new HashMap<>();
+        userData.put("id", user.getId().toString());
+        userData.put("username", user.getUsername());
+        userData.put("email", user.getEmail());
+        response.put("user", userData);
+
+        return ResponseEntity.ok(response);
+    }
+
+    public Object getAllUsers() {
+        return userRepository.findAll();
+    }
+}

@@ -1,17 +1,8 @@
-package com.productivity.backend.logout; // PERBAIKAN: Nama package lebih rapi
+package com.productivity.backend.auth;
 
-public class RegisterRequest {
-    private String name; // PERBAIKAN: Ditambahkan field name
+public class LoginRequest {
     private String email;
     private String password;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public String getEmail() {
         return email;
