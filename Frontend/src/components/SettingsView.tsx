@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
-const API_BASE_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081"}/api/settings`;
+const API_BASE_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081/api"}/settings`;
 
 export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const {
@@ -48,6 +48,10 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     occupation,
     setOccupation,
     saveProfileToDb,
+    saveGridToDb,
+    getSettingGrid,
+    updateGridItemInDb,
+    deleteGridItemFromDb,
   } = useAppContext();
 
   const [activeSection, setActiveSection] = useState<
@@ -59,33 +63,26 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const [email, setEmail] = useState("student@example.com");
 
   // Custom Profile Grid States
-  const [profileGridItems, setProfileGridItems] = useState([
+  // Mendeklarasikan secara eksplisit bahwa array ini berisi objek dengan struktur spesifik
+  const [profileGridItems, setProfileGridItems] = useState<
     {
-      id: "1",
-      label: "Universitas",
-      value: "Universitas Indonesia",
-      iconName: "GraduationCap",
-    },
-    { id: "2", label: "Angkatan / Tahun", value: "2024", iconName: "Calendar" },
-    {
-      id: "3",
-      label: "Jurusan / Prodi",
-      value: "Teknik Informatika",
-      iconName: "Briefcase",
-    },
-    { id: "4", label: "Target IPK", value: "3.95 / 4.00", iconName: "Award" },
-  ]);
+      id: string;
+      label: string;
+      value: string;
+      iconName: string;
+    }[]
+  >([]);
   const [editingGridId, setEditingGridId] = useState<string | null>(null);
   const [gridLabel, setGridLabel] = useState("");
   const [gridValue, setGridValue] = useState("");
   const [gridIconName, setGridIconName] = useState("GraduationCap");
   const [isAddingGrid, setIsAddingGrid] = useState(false);
 
-  // Notification States (WhatsApp Sudah Dihapus dari Sini)
+  // Notification States
   const [pushEnabled, setPushEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [emailDigestEnabled, setEmailDigestEnabled] = useState(true);
-  const [emailFrequency, setEmailFrequency] = useState("daily");
+  const [emailFrequency, setEmailFrequency] = useState("weekly");
 
   // Privacy & Verification States
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -99,35 +96,43 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Fungsi pembantu untuk menyisipkan Token JWT ke Headers
+  const getHeaders = () => {
+    const token = localStorage.getItem("heyjipro_token");
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
   // --- 2. AMBIL DATA DARI BACKEND JAVA ---
   React.useEffect(() => {
     if (user?.id && user?.email) {
       setEmail(user.email);
 
-      fetch(`${API_BASE_URL}/${user.id}`)
+      fetch(`${API_BASE_URL}/${user.id}`, {
+        headers: getHeaders(),
+      })
         .then((response) => response.json())
         .then((data) => {
-          // Ganti dari camelCase menjadi snake_case sesuai payload Postman Anda
-          setPushEnabled(data.push_enabled ?? true);
-          setSoundEnabled(data.sound_enabled ?? true);
-          setEmailDigestEnabled(data.email_digest_enabled ?? true);
-          setEmailFrequency(data.email_frequency || "daily");
+          // 1. Cukup muat preferensi spesifik view settings di sini
+          setPushEnabled(data.pushEnabled ?? true);
+          setSoundEnabled(data.soundEnabled ?? true);
+          setEmailDigestEnabled(data.emailDigestEnabled ?? true);
+          setEmailFrequency(data.emailFrequency || "weekly");
 
-          // Tambahkan sinkronisasi untuk field profil utama yang sempat bernilai null
-          if (data.first_name) setFirstName(data.first_name);
-          if (data.last_name) setLastName(data.last_name);
-          if (data.occupation) setOccupation(data.occupation);
-          if (data.profile_pic) setProfilePic(data.profile_pic);
-
-          if (data.profile_grid_items && data.profile_grid_items.length > 0) {
-            setProfileGridItems(data.profile_grid_items);
+          if (data.profileGridItems && data.profileGridItems.length > 0) {
+            setProfileGridItems(data.profileGridItems);
           }
         })
         .catch((error) =>
-          console.error("Gagal memuat data dari Backend Java:", error),
+          console.error(
+            "Gagal memuat data pengaturan dari Backend Java:",
+            error,
+          ),
         );
     }
-  }, [user]);
+  }, [user]); // Hapus dependensi fungsi set profil dari array pemantau jika tidak diperlukan
 
   const renderGridIcon = (iconName: string) => {
     switch (iconName) {
@@ -146,7 +151,8 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     }
   };
 
-  const handleAddGridItem = (e: React.FormEvent) => {
+  // 1. HANDLER TAMBAH GRID (Membaca state lokal terbaru lalu push massal)
+  const handleAddGridItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!gridLabel || !gridValue) {
       executeWithFeedback(async () => {
@@ -154,22 +160,34 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       }, "");
       return;
     }
+
     const newItem = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), // Generate String ID unik sementara
       label: gridLabel,
       value: gridValue,
       iconName: gridIconName,
     };
-    setProfileGridItems((prev) => [...prev, newItem]);
-    setGridLabel("");
-    setGridValue("");
-    setIsAddingGrid(false);
-    executeWithFeedback(
-      async () => {},
-      "Item grid profil baru berhasil ditambahkan!",
-    );
+
+    // Buat salinan array baru untuk dikirim ke database
+    const updatedGridList = [...profileGridItems, newItem];
+
+    await executeWithFeedback(async () => {
+      // Panggil fungsi POST massal dari AppContext
+      await saveGridToDb(updatedGridList);
+      const freshGridItems = await getSettingGrid();
+      // Jika sukses di server, perbarui state lokal agar UI langsung sinkron
+      if (freshGridItems && freshGridItems.length > 0) {
+        setProfileGridItems(freshGridItems);
+      } else {
+        setProfileGridItems(updatedGridList);
+      }
+      setGridLabel("");
+      setGridValue("");
+      setIsAddingGrid(false);
+    }, "Item grid profil baru berhasil ditambahkan!");
   };
 
+  // 2. HANDLER MEMULAI MODE EDIT (Tetap mempertahankan state pengisian form lokal)
   const handleStartEditGrid = (item: {
     id: string;
     label: string;
@@ -183,43 +201,53 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     setIsAddingGrid(false);
   };
 
-  const handleSaveEditGrid = (e: React.FormEvent) => {
+  // 3. HANDLER SIMPAN PERUBAHAN EDIT (Menembak rute PUT item spesifik)
+  const handleSaveEditGrid = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gridLabel || !gridValue) {
+    if (!gridLabel || !gridValue || !editingGridId) {
       executeWithFeedback(async () => {
         throw new Error("Harap isi Label dan Nilai.");
       }, "");
       return;
     }
-    setProfileGridItems((prev) =>
-      prev.map((item) =>
-        item.id === editingGridId
-          ? {
-              ...item,
-              label: gridLabel,
-              value: gridValue,
-              iconName: gridIconName,
-            }
-          : item,
-      ),
-    );
-    setEditingGridId(null);
-    setGridLabel("");
-    setGridValue("");
-    executeWithFeedback(
-      async () => {},
-      "Item grid profil berhasil diperbarui!",
-    );
-  };
 
-  const handleDeleteGridItem = (id: string) => {
-    setProfileGridItems((prev) => prev.filter((item) => item.id !== id));
-    if (editingGridId === id) {
+    const updatedDataItem = {
+      label: gridLabel,
+      value: gridValue,
+      iconName: gridIconName,
+    };
+
+    await executeWithFeedback(async () => {
+      // Panggil fungsi PUT dari AppContext menembak /api/settings/grid/item/{userId}/{itemId}
+      await updateGridItemInDb(editingGridId, updatedDataItem);
+
+      // Sinkronisasikan state komponen lokal jika server merespons sukses
+      setProfileGridItems((prev) =>
+        prev.map((item) =>
+          item.id === editingGridId ? { ...item, ...updatedDataItem } : item,
+        ),
+      );
       setEditingGridId(null);
       setGridLabel("");
       setGridValue("");
-    }
-    executeWithFeedback(async () => {}, "Item grid profil berhasil dihapus.");
+    }, "Item grid profil berhasil diperbarui!");
+  };
+
+  // 4. HANDLER HAPUS GRID (Menembak rute DELETE item spesifik)
+  const handleDeleteGridItem = async (id: string) => {
+    await executeWithFeedback(async () => {
+      // Panggil fungsi DELETE dari AppContext menembak /api/settings/grid/item/{userId}/{itemId}
+      await deleteGridItemFromDb(id);
+
+      // Filter state lokal untuk menghilangkan item yang sudah dihapus secara permanen di database
+      setProfileGridItems((prev) => prev.filter((item) => item.id !== id));
+
+      if (editingGridId === id) {
+        setEditingGridId(null);
+        setGridLabel("");
+        setGridValue("");
+      }
+    }, "Item grid profil berhasil dihapus.");
   };
 
   const handleUploadClick = () => {
@@ -265,78 +293,77 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // 1. Ambil UID asli langsung dari state user (Jangan gunakan fallback "1" lagi)
     const currentUserId = user?.id;
 
-    // 2. Validasi ketat: Jika user belum terautentikasi / belum login, hentikan pengiriman
     if (!currentUserId) {
       executeWithFeedback(async () => {
         throw new Error(
-          "Gagal menyimpan: Sesi login Anda kosong atau kedaluwarsa. Silakan Sign Out lalu Sign In kembali.",
+          "Gagal menyimpan: Sesi login Anda kosong atau kedaluwarsa.",
         );
       }, "");
       return;
     }
 
-    // Ubah key objek menjadi snake_case agar dibaca oleh anotasi @JsonProperty Java
+    // Gunakan properti camelCase agar dibaca dengan benar oleh Java DTO / Entity
     const profileData = {
-      first_name: firstName,
-      last_name: "-",
+      firstName: firstName,
+      lastName: "-",
       email: email,
       occupation: occupation,
-      profile_pic: profilePic,
-      profile_grid_items: profileGridItems,
+      profilePic: profilePic,
+      profileGridItems: profileGridItems,
     };
 
-    console.log(
-      "Mengirim data profil untuk userId sah:",
-      currentUserId,
-      profileData,
-    );
-
     executeWithFeedback(async () => {
-      // 3. Kirim menggunakan currentUserId yang sudah dijamin valid (berupa UUID Supabase)
-      const response = await fetch(
-        `${API_BASE_URL}/profile?userId=${currentUserId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(profileData),
-        },
-      );
+      const response = await fetch(`${API_BASE_URL}/profile/${currentUserId}`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(profileData),
+      });
 
       if (!response.ok) {
         throw new Error("Gagal menyimpan profil ke server backend.");
       }
 
-      // 4. Sinkronisasi data lokal ke AppContext / Supabase client side
       await saveProfileToDb(firstName, lastName, profilePic, occupation);
-    }, "Informasi pribadi & grid profil berhasil disimpan ke database!");
+    }, "Informasi pribadi & grid profil berhasil disimpan!");
   };
 
   const handleSavePreferences = () => {
-    if (!user?.id) return;
+    const currentUserId = user?.id;
 
-    // Ubah properti menjadi snake_case
+    if (!currentUserId) {
+      executeWithFeedback(async () => {
+        throw new Error(
+          "Gagal menyimpan: Sesi login Anda kosong atau kedaluwarsa.",
+        );
+      }, "");
+      return;
+    }
+
+    // Payload disesuaikan ke camelCase SettingModel Java
     const notificationData = {
-      push_enabled: pushEnabled,
-      sound_enabled: soundEnabled,
-      email_digest_enabled: emailDigestEnabled,
-      email_frequency: emailFrequency,
+      pushEnabled: pushEnabled,
+      soundEnabled: soundEnabled,
+      emailDigestEnabled: emailDigestEnabled,
+      emailFrequency: emailFrequency,
     };
 
     executeWithFeedback(async () => {
-      const response = await fetch(`${API_BASE_URL}/${user.id}/notifications`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(notificationData),
-      });
+      // Menyesuaikan rute endpoint path variable Java: /api/settings/{userId}/notifications
+      const response = await fetch(
+        `${API_BASE_URL}/notifications/${currentUserId}`,
+        {
+          method: "POST", // Diubah menjadi POST sesuai Mapping di Java Controller Anda
+          headers: getHeaders(),
+          body: JSON.stringify(notificationData),
+        },
+      );
 
       if (!response.ok) {
         throw new Error("Gagal menyimpan preferensi ke server.");
       }
-    }, "Preferensi notifikasi berhasil disimpan ke Supabase Cloud!");
+    }, "Preferensi notifikasi berhasil disimpan!");
   };
 
   const handleTestBell = () => {
@@ -389,9 +416,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
         setVerificationCode("");
       }, "Email Anda berhasil diverifikasi secara resmi!");
     } else {
-      setVerificationError(
-        "Kode OTP yang dimasukkan tidak valid. Silakan coba lagi.",
-      );
+      setVerificationError("Kode OTP yang dimasukkan tidak valid.");
       executeWithFeedback(async () => {
         throw new Error("Kode OTP tidak cocok.");
       }, "");
@@ -421,16 +446,15 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       return;
     }
 
-    // Ambil userId dari context (gunakan dummy jika user/Supabase belum siap saat dev)
-    const activeUserId = user?.id || "dummy-student-123";
+    if (!user?.id) return;
 
     executeWithFeedback(async () => {
-      // PROSES KIRIM KE BACKEND JAVA YANG SEBENARNYA
+      // Disesuaikan dengan URL PathVariable Java: /api/settings/change-password/{userId}
       const response = await fetch(
-        `${API_BASE_URL}/change-password?userId=${activeUserId}`,
+        `${API_BASE_URL}/change-password/${user.id}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getHeaders(),
           body: JSON.stringify({
             currentPassword: currentPassword,
             newPassword: newPassword,
@@ -445,11 +469,10 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
         );
       }
 
-      // Reset form jika sukses
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    }, "Password Anda telah berhasil diperbarui di database!");
+    }, "Password Anda telah berhasil diperbarui!");
   };
 
   // --- 3. RETURN JSX INTERFACE ---
@@ -465,7 +488,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
           <Card>
             <div className="flex flex-col items-center p-4">
               <div className="relative group w-24 h-24 mb-4">
-                <div className="w-full h-full rounded-full bg-gradient-to-tr from-purple to-soft-blue p-1 relative">
+                <div className="w-full h-full rounded-full bg-linear-to-tr from-purple to-soft-blue p-1 relative">
                   <img
                     src={profilePic}
                     alt="User Avatar"
@@ -639,7 +662,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                   <div className="mt-8 flex justify-end">
                     <button
                       type="submit"
-                      className="px-6 py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple/30 transition-all text-sm cursor-pointer"
+                      className="px-6 py-2.5 bg-linear-to-r from-purple to-soft-blue text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple/30 transition-all text-sm cursor-pointer"
                     >
                       Simpan Perubahan
                     </button>
@@ -666,7 +689,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                         setGridValue("");
                         setGridIconName("GraduationCap");
                       }}
-                      className="px-3.5 py-2 bg-gradient-to-r from-purple to-soft-blue text-white rounded-xl text-xs font-bold hover:shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-linear-to-r from-purple to-soft-blue text-white rounded-xl text-xs font-bold hover:shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" /> Tambah Blok
                     </button>
@@ -1126,7 +1149,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                         <button
                           onClick={handleSendVerificationCode}
                           disabled={isSendingCode}
-                          className="px-4 py-2 bg-gradient-to-r from-purple to-soft-blue text-white rounded-xl text-xs font-bold hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
+                          className="px-4 py-2 bg-linear-to-r from-purple to-soft-blue text-white rounded-xl text-xs font-bold hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
                         >
                           {isSendingCode ? (
                             "Mengirim..."

@@ -51,12 +51,12 @@ export const AuthModal = ({
   const [otpGenerated, setOtpGenerated] = useState("");
   const [otpInput, setOtpInput] = useState("");
   const [validationError, setValidationError] = useState("");
+  const { loginUser } = useAppContext();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isLogin && password !== confirmPassword) {
-      alert("Konfirmasi password tidak sesuai");
       return;
     }
 
@@ -84,22 +84,20 @@ export const AuthModal = ({
         body: JSON.stringify(bodyData),
       });
 
-      const result = await response.text();
+      const result = await response.json();
 
       if (!response.ok) {
         throw new Error(result);
       }
 
-      alert(result);
-
       if (isLogin) {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userEmail", email);
+        loginUser(result.token, result.user);
 
         onLogin();
         onClose();
       } else {
-        alert("Register berhasil, silakan login.");
         setIsLogin(true);
       }
     } catch (error: any) {
@@ -108,7 +106,6 @@ export const AuthModal = ({
   };
 
   const handleGoogleAuth = async () => {
-    // Fungsi ini masih di-comment / disiapkan untuk implementasi Firebase nanti
     alert("Fitur Google Login sedang dalam pengembangan");
   };
 
@@ -239,7 +236,7 @@ export const AuthModal = ({
                     className="w-full flex justify-center items-center gap-3 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
                   >
                     <img
-                      src="https://www.google.com/favicon.ico"
+                      src="/src/assets/images/GooglePic.jpg"
                       alt="Google"
                       className="w-4 h-4"
                     />

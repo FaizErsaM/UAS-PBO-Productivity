@@ -52,18 +52,8 @@ public class TaskService {
         TaskModel existing = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task dengan ID " + id + " tidak ditemukan"));
 
-        existing.setTitle(updated.getTitle());
-        existing.setCourse(updated.getCourse());
-        existing.setDeadline(updated.getDeadline());
-        if (updated.isCompleted()) {
-            existing.setCompleted(true);
-        } else {
-            existing.setCompleted(false);
-        }
-        if (updated.getAiMaterials() != null) {
-            existing.setAiMaterials(updated.getAiMaterials());
-        }
-
+        // fungsi updateTask cuman buat ngubah status si tasknya dari false ke true aja
+        existing.setCompleted(true);
         return enrichWithPriority(taskRepository.save(existing));
     }
 
@@ -86,22 +76,26 @@ public class TaskService {
     // ========================================================================
     // Helper: hitung prioritas secara dinamis dari deadline.
     // Logikanya sama dengan calculatePriority() di Frontend/src/utils/dateUtils.ts:
-    //   - <= 24 jam -> high   (WAKTU AKAN HABIS)
-    //   - <= 72 jam -> medium (WAKTU DEKAT)
-    //   -  > 72 jam -> low    (WAKTU SANTAI)
+    // - <= 24 jam -> high (WAKTU AKAN HABIS)
+    // - <= 72 jam -> medium (WAKTU DEKAT)
+    // - > 72 jam -> low (WAKTU SANTAI)
     // Server sebagai single source of truth supaya prioritas tidak basi.
     // ========================================================================
     private TaskModel enrichWithPriority(TaskModel task) {
-        if (task == null) return null;
+        if (task == null)
+            return null;
         task.setPriority(calculatePriority(task.getDeadline()));
         return task;
     }
 
     private String calculatePriority(ZonedDateTime deadline) {
-        if (deadline == null) return "low";
+        if (deadline == null)
+            return "low";
         long diffHours = Duration.between(ZonedDateTime.now(), deadline).toHours();
-        if (diffHours <= 24) return "high";
-        if (diffHours <= 72) return "medium";
+        if (diffHours <= 24)
+            return "high";
+        if (diffHours <= 72)
+            return "medium";
         return "low";
     }
 }

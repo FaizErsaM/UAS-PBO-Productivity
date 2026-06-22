@@ -8,6 +8,9 @@ import com.productivity.backend.settings.SettingModel;
 import com.productivity.backend.settings.SettingRepository;
 
 import java.util.Optional;
+import java.util.List;
+import java.util.UUID;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,6 +53,42 @@ public class AuthService {
         setting.setSoundEnabled(true);
         setting.setEmailDigestEnabled(false);
         setting.setEmailFrequency("weekly");
+
+        // --- TAMBAHKAN LOGIKA GRID DUMMY DI SINI ---
+        List<SettingModel.GridItem> defaultGrids = new ArrayList<>();
+
+        SettingModel.GridItem univ = new SettingModel.GridItem();
+        univ.setId(UUID.randomUUID().toString());
+        univ.setLabel("Universitas");
+        univ.setValue("-");
+        univ.setIconName("GraduationCap");
+        defaultGrids.add(univ);
+
+        SettingModel.GridItem angkatan = new SettingModel.GridItem();
+        angkatan.setId(UUID.randomUUID().toString());
+        angkatan.setLabel("Angkatan / Tahun");
+        angkatan.setValue("-");
+        angkatan.setIconName("Calendar");
+        defaultGrids.add(angkatan);
+
+        SettingModel.GridItem jurusan = new SettingModel.GridItem();
+        jurusan.setId(UUID.randomUUID().toString());
+        jurusan.setLabel("Jurusan / Prodi");
+        jurusan.setValue("-");
+        jurusan.setIconName("Briefcase");
+        defaultGrids.add(jurusan);
+
+        SettingModel.GridItem ipk = new SettingModel.GridItem();
+        ipk.setId(UUID.randomUUID().toString());
+        ipk.setLabel("Target IPK");
+        ipk.setValue("-");
+        ipk.setIconName("Award");
+        defaultGrids.add(ipk);
+
+        // Masukkan daftar template ini ke dalam setting pengguna baru
+        setting.setProfileGridItems(defaultGrids);
+        // -------------------------------------------
+
         settingRepository.save(setting);
 
         return ResponseEntity.ok("Register berhasil");

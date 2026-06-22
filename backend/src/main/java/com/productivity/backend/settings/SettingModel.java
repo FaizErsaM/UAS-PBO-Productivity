@@ -97,6 +97,12 @@ public class SettingModel {
         public void setIconName(String iconName) {
             this.iconName = iconName;
         }
+
+        public void updateGrid(String label, String value, String iconName) {
+            this.label = label;
+            this.value = value;
+            this.iconName = iconName;
+        }
     }
 
     // --- Getter & Setter Utama ---

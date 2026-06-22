@@ -6,11 +6,16 @@ import React, {
   useCallback,
 } from "react";
 import { MOCK_TASKS, MOCK_HABITS, Task, Habit } from "../data/mockData";
-import { User } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
 
 // URL Backend Spring Boot Pangeran
-const API_BASE_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081"}/api`;
+const API_BASE_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081/api"}`;
+
+// Interface lokal User tiruan untuk menggantikan tipe Supabase lama
+interface AppUser {
+  id: string;
+  username: string;
+  email: string;
+}
 
 type FeedbackStatus = "idle" | "loading" | "success" | "error";
 interface FeedbackState {
@@ -36,8 +41,10 @@ interface AppContextType {
     action: () => void | Promise<void>,
     successMessage: string,
   ) => Promise<void>;
-  user: User | null;
+  user: AppUser | null;
   authLoading: boolean;
+  loginUser: (token: string, userData: AppUser) => void; // Fungsi tambahan untuk login handler
+  logoutUser: () => void; // Fungsi tambahan untuk logout handler
   profilePic: string;
   setProfilePic: (url: string) => void;
   firstName: string;
@@ -52,6 +59,13 @@ interface AppContextType {
     pic: string,
     occ: string,
   ) => Promise<void>;
+  getSettingGrid: () => Promise<any[]>;
+  saveGridToDb: (newGridItems: any[]) => Promise<void>;
+  updateGridItemInDb: (
+    itemId: string,
+    updatedItemData: { label: string; value: string; iconName: string },
+  ) => Promise<void>;
+  deleteGridItemFromDb: (itemId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -63,7 +77,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     status: "idle",
     message: "",
   });
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -81,6 +95,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       (localStorage.getItem("heyjipro_theme") as "light" | "dark") || "light"
     );
   });
+
+  // Fungsi pembantu untuk membuat authorization header berisi token JWT
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem("heyjipro_token");
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }, []);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -112,42 +135,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
-  // 1. Integrasi Supabase Auth
+  // 1. Sinkronisasi Sesi Lokal JWT (Menggantikan Supabase Auth Listener)
   useEffect(() => {
-    // Ambil sesi awal saat aplikasi dimuat
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-    });
+    const storedUser = localStorage.getItem("heyjipro_user");
+    const storedToken = localStorage.getItem("heyjipro_token");
 
-    // Dengarkan perubahan login/logout
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+    if (storedUser && storedToken) {
+      setUser(JSON.parse(storedUser));
+    }
+    setAuthLoading(false);
   }, []);
 
-  // 2. Fetch Data dari Spring Boot Backend (Menggantikan onSnapshot)
+  // Fungsi yang dipanggil saat halaman login Anda sukses menerima token dari backend
+  const loginUser = (token: string, userData: AppUser) => {
+    localStorage.setItem("heyjipro_token", token);
+    localStorage.setItem("heyjipro_user", JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  const logoutUser = () => {
+    localStorage.removeItem("heyjipro_token");
+    localStorage.removeItem("heyjipro_user");
+    setUser(null);
+  };
+
+  // 2. Fetch Data dari Spring Boot Backend dengan header JWT
   const fetchDataFromBackend = useCallback(async () => {
     if (!user) return;
     try {
-      // PERHATIAN: Pastikan teman kelompok Anda membuat endpoint GET ini di Spring Boot
+      const headers = getAuthHeaders();
       const [tasksRes, habitsRes, profileRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/tasks/user/${user.id}`),
-        fetch(`${API_BASE_URL}/habits/user/${user.id}`),
-        fetch(`${API_BASE_URL}/users/${user.id}`), // Endpoint untuk profil
+        fetch(`${API_BASE_URL}/tasks/user/${user.id}`, { headers }),
+        fetch(`${API_BASE_URL}/habits/user/${user.id}`, { headers }),
+        fetch(`${API_BASE_URL}/settings/${user.id}`, { headers }),
       ]);
 
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json();
-        setTasks(tasksData.length > 0 ? tasksData : MOCK_TASKS); // Gunakan mock jika kosong sementara
+        setTasks(tasksData);
       }
       if (habitsRes.ok) {
         const habitsData = await habitsRes.json();
-        setHabits(habitsData.length > 0 ? habitsData : MOCK_HABITS);
+        setHabits(habitsData);
       }
       if (profileRes.ok) {
         const profileData = await profileRes.json();
@@ -159,7 +188,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error) {
       console.error("Gagal menarik data dari backend:", error);
     }
-  }, [user]);
+  }, [user, getAuthHeaders]);
 
   useEffect(() => {
     if (user) {
@@ -167,23 +196,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setTasks([]);
       setHabits([]);
-      setFirstName("Student");
-      setLastName("User");
+      setFirstName("");
+      setLastName("");
     }
   }, [user, fetchDataFromBackend]);
 
-  // 3. Modifikasi Operasi CRUD ke Spring Boot
+  // 3. Operasi CRUD yang disematkan Header Keamanan
   const addTask = async (task: Omit<Task, "id">) => {
     if (!user) throw new Error("User tidak terautentikasi.");
     await executeWithFeedback(async () => {
       const response = await fetch(`${API_BASE_URL}/tasks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ ...task, userId: user.id }),
       });
       if (!response.ok) throw new Error("Gagal menyimpan tugas ke server");
 
-      // Update state lokal agar UI langsung berubah tanpa perlu refresh
       const newTask = await response.json();
       setTasks((prev) => [...prev, newTask]);
     }, "Tugas ditambahkan");
@@ -194,7 +222,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     await executeWithFeedback(async () => {
       const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updatedData),
       });
       if (!response.ok) throw new Error("Gagal memperbarui tugas");
@@ -216,6 +244,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     await executeWithFeedback(async () => {
       const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error("Gagal menghapus tugas");
 
@@ -228,7 +257,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     await executeWithFeedback(async () => {
       const response = await fetch(`${API_BASE_URL}/habits`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ ...habit, userId: user.id }),
       });
       if (!response.ok) throw new Error("Gagal menyimpan habit");
@@ -256,7 +285,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     await executeWithFeedback(async () => {
       const response = await fetch(`${API_BASE_URL}/habits/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updatedData),
       });
       if (!response.ok) throw new Error("Gagal memperbarui habit");
@@ -272,6 +301,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     await executeWithFeedback(async () => {
       const response = await fetch(`${API_BASE_URL}/habits/${id}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error("Gagal menghapus habit");
 
@@ -293,11 +323,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         profilePic: pic,
         occupation: occ,
       };
-      const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
-        method: "PUT", // Atau POST tergantung pengaturan backend tim Anda
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/settings/profile/${user.id}`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        },
+      );
       if (!response.ok) throw new Error("Gagal menyimpan profil");
 
       setFirstName(first);
@@ -305,6 +338,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       setProfilePic(pic);
       setOccupation(occ);
     }, "Profil berhasil disimpan");
+  };
+
+  // 1. Ambil data grid secara spesifik
+  const getSettingGrid = useCallback(async () => {
+    if (!user) return [];
+    try {
+      const response = await fetch(`${API_BASE_URL}/settings/grid/${user.id}`, {
+        headers: getAuthHeaders(),
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data grid:", error);
+    }
+    return [];
+  }, [user, getAuthHeaders]);
+
+  // 2. Simpan/Menimpa Massal Daftar Grid (POST)
+  const saveGridToDb = async (newGridItems: any[]) => {
+    if (!user) throw new Error("User tidak terautentikasi.");
+    await executeWithFeedback(async () => {
+      const response = await fetch(`${API_BASE_URL}/settings/grid/${user.id}`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(newGridItems), // Mengirimkan Array List utuh
+      });
+
+      if (!response.ok)
+        throw new Error("Gagal memperbarui susunan grid profil");
+    }, "Susunan informasi grid berhasil disimpan!");
+  };
+
+  // 3. Mengubah Satu Item Grid Spesifik (PUT)
+  const updateGridItemInDb = async (
+    itemId: string,
+    updatedItemData: { label: string; value: string; iconName: string },
+  ) => {
+    if (!user) throw new Error("User tidak terautentikasi.");
+    await executeWithFeedback(async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/settings/grid/item/${user.id}/${itemId}`,
+        {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(updatedItemData),
+        },
+      );
+
+      if (!response.ok) throw new Error("Gagal mengubah item grid");
+    }, "Item grid berhasil diperbarui!");
+  };
+
+  // 4. Menghapus Satu Item Grid Spesifik (DELETE)
+  const deleteGridItemFromDb = async (itemId: string) => {
+    if (!user) throw new Error("User tidak terautentikasi.");
+    await executeWithFeedback(async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/settings/grid/item/${user.id}/${itemId}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        },
+      );
+
+      if (!response.ok) throw new Error("Gagal menghapus item grid");
+    }, "Item grid berhasil dihapus!");
   };
 
   return (
@@ -326,6 +426,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         executeWithFeedback,
         user,
         authLoading,
+        loginUser,
+        logoutUser,
         profilePic,
         setProfilePic,
         firstName,
@@ -335,6 +437,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         occupation,
         setOccupation,
         saveProfileToDb,
+        getSettingGrid,
+        saveGridToDb,
+        updateGridItemInDb,
+        deleteGridItemFromDb,
       }}
     >
       {children}

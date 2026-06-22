@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.productivity.backend.user.User;
 import com.productivity.backend.user.UserRepository;
 
+import java.util.List; // 1. WAJIB TAMBAHKAN IMPORT INI AGAR LIST TIDAK ERROR
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,18 +24,58 @@ public class SettingController {
     private UserRepository userRepository;
 
     @GetMapping("/{userId}")
-    public ResponseEntity<SettingModel> getSetting(@PathVariable UUID userId) {
+    public ResponseEntity<SettingModel> getSetting(@PathVariable("userId") UUID userId) {
         SettingModel setting = settingService.getOrCreateSetting(userId);
         return ResponseEntity.ok(setting);
     }
 
-    // 2. Mengubah password dengan memanfaatkan data email dari tabel settings
+    @GetMapping("/grid/{userId}")
+    public ResponseEntity<List<SettingModel.GridItem>> getSettingGrid(@PathVariable("userId") UUID userId) {
+        SettingModel setting = settingService.getOrCreateSetting(userId);
+        return ResponseEntity.ok(setting.getProfileGridItems());
+    }
+
+    @PostMapping("/grid/{userId}")
+    public ResponseEntity<?> saveSettingGrid(
+            @PathVariable("userId") UUID userId,
+            @RequestBody List<SettingModel.GridItem> newGridItems) {
+
+        SettingModel setting = settingService.getOrCreateSetting(userId);
+        setting.setProfileGridItems(newGridItems);
+
+        // Pastikan di SettingService Anda sudah membuat method save()
+        settingService.save(setting);
+
+        return ResponseEntity.ok(Map.of("message", "Kustomisasi grid profil berhasil diperbarui"));
+    } // 2. DI SINI SEBELUMNYA KURANG KURUNG KURAWAL PENUTUP METHOD
+
+    // Endpoint untuk Mengubah/Edit Item Grid Spesifik
+    @PutMapping("/grid/item/{userId}/{itemId}")
+    public ResponseEntity<SettingModel> updateGridItem(
+            @PathVariable("userId") UUID userId,
+            @PathVariable("itemId") String itemId,
+            @RequestBody SettingModel.GridItem dataBaru) {
+
+        SettingModel updated = settingService.updateGridItem(userId, itemId, dataBaru);
+        return ResponseEntity.ok(updated);
+    }
+
+    // Endpoint untuk Menghapus Item Grid Spesifik
+    @DeleteMapping("/grid/item/{userId}/{itemId}")
+    public ResponseEntity<SettingModel> deleteGridItem(
+            @PathVariable("userId") UUID userId,
+            @PathVariable("itemId") String itemId) {
+
+        SettingModel updated = settingService.deleteGridItem(userId, itemId);
+        return ResponseEntity.ok(updated);
+    }
+
     @PostMapping("/change-password/{userId}")
-    public ResponseEntity<?> changePassword(@PathVariable UUID userId, @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> changePassword(@PathVariable("userId") UUID userId,
+            @RequestBody Map<String, String> request) {
         String currentPassword = request.get("currentPassword");
         String newPassword = request.get("newPassword");
 
-        // Ambil data settings berdasarkan userId untuk mendapatkan email yang tersimpan
         SettingModel setting = settingService.getOrCreateSetting(userId);
         String emailUser = setting.getEmail();
 
@@ -43,7 +84,6 @@ public class SettingController {
                     .body(Map.of("message", "Email user belum terdaftar di pengaturan profil"));
         }
 
-        // Cari data login user berdasarkan email tersebut
         Optional<User> userOptional = userRepository.findByEmail(emailUser);
 
         if (userOptional.isEmpty()) {
@@ -52,26 +92,25 @@ public class SettingController {
 
         User user = userOptional.get();
 
-        // Validasi password lama
         if (!user.getPassword().equals(currentPassword)) {
             return ResponseEntity.badRequest().body(Map.of("message", "Password lama salah!"));
         }
 
-        // Simpan password baru ke database Supabase secara permanen
         user.setPassword(newPassword);
         userRepository.save(user);
 
         return ResponseEntity.ok().body(Map.of("message", "Password berhasil diubah"));
     }
 
-    @PostMapping("/profile")
-    public ResponseEntity<SettingModel> updateProfile(@PathVariable UUID userId, @RequestBody SettingModel dataBaru) {
+    @PostMapping("/profile/{userId}")
+    public ResponseEntity<SettingModel> updateProfile(@PathVariable("userId") UUID userId,
+            @RequestBody SettingModel dataBaru) {
         SettingModel updated = settingService.updateProfile(userId, dataBaru);
         return ResponseEntity.ok(updated);
     }
 
-    @PostMapping("/notifications")
-    public ResponseEntity<SettingModel> updateNotifications(@PathVariable UUID userId,
+    @PostMapping("/notifications/{userId}")
+    public ResponseEntity<SettingModel> updateNotifications(@PathVariable("userId") UUID userId,
             @RequestBody SettingModel dataBaru) {
         SettingModel updated = settingService.updateNotifications(userId, dataBaru);
         return ResponseEntity.ok(updated);
