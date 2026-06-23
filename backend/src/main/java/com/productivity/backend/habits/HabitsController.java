@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/habits")
@@ -31,7 +32,7 @@ public class HabitsController {
 
     // 2. Endpoint untuk tab "Manual Entry" - menggunakan DTO CreateHabitRequest (SRP)
     @PostMapping("/manual")
-    public ResponseEntity<HabitsModel> createManualHabit(@RequestBody CreateHabitRequest request) {
+    public ResponseEntity<HabitsModel> createManualHabit(@Valid @RequestBody CreateHabitRequest request) {
         UUID userId = UUID.fromString(request.getUserId());
         String habitName = request.getHabitName();
         int targetPeriod = request.getTargetPeriod();
@@ -40,7 +41,7 @@ public class HabitsController {
 
     // Endpoint kompatibel dengan AppContext.tsx buatan Adit (POST /api/habits)
     @PostMapping
-    public ResponseEntity<HabitsModel> createHabit(@RequestBody CreateHabitRequest request) {
+    public ResponseEntity<HabitsModel> createHabit(@Valid @RequestBody CreateHabitRequest request) {
         UUID userId = UUID.fromString(request.getUserId());
         String habitName = request.getHabitName();
         int targetPeriod = request.getTargetPeriod();
