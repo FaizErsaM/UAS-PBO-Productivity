@@ -197,9 +197,10 @@ public class TaskService {
     // ========================================================================
     // Helper: hitung prioritas secara dinamis dari deadline.
     // Logikanya sama dengan calculatePriority() di Frontend/src/utils/dateUtils.ts:
-    // - <= 24 jam -> high (WAKTU AKAN HABIS)
-    // - <= 72 jam -> medium (WAKTU DEKAT)
-    // - > 72 jam -> low (WAKTU SANTAI)
+    // - < 0 jam (lewat deadline) -> overdue (TERLAMBAT, urgent)
+    // - <= 24 jam                -> high    (WAKTU AKAN HABIS)
+    // - <= 72 jam                -> medium  (WAKTU DEKAT)
+    // - > 72 jam                 -> low     (WAKTU SANTAI)
     // Server sebagai single source of truth supaya prioritas tidak basi.
     // ========================================================================
     private TaskModel enrichWithPriority(TaskModel task) {
@@ -213,6 +214,9 @@ public class TaskService {
         if (deadline == null)
             return "low";
         long diffHours = Duration.between(ZonedDateTime.now(), deadline).toHours();
+        // Deadline sudah lewat → TERLAMBAT (dianggap urgent, lock task lain)
+        if (diffHours < 0)
+            return "overdue";
         if (diffHours <= 24)
             return "high";
         if (diffHours <= 72)
