@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const getPriorityLabel = (priority: string) => {
   switch (priority) {
+    case 'overdue': return 'TERLAMBAT';
     case 'high': return 'WAKTU AKAN HABIS';
     case 'medium': return 'WAKTU DEKAT';
     default: return 'WAKTU SANTAI';
@@ -143,7 +144,10 @@ export const TasksView = () => {
   }, [tasks, searchQuery]);
 
   const hasUrgentTasks = useMemo(() => {
-    return tasks.some(t => !t.completed && calculatePriority(t.deadline ?? '') === 'high');
+    return tasks.some(t => {
+      const p = calculatePriority(t.deadline ?? '');
+      return !t.completed && (p === 'high' || p === 'overdue');
+    });
   }, [tasks]);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
@@ -221,7 +225,8 @@ export const TasksView = () => {
             </div>
           ) : filteredTasks.map(task => {
             const priority = calculatePriority(task.deadline ?? '');
-            const isLocked = hasUrgentTasks && !task.completed && priority !== 'high';
+            const isUrgent = priority === 'high' || priority === 'overdue';
+            const isLocked = hasUrgentTasks && !task.completed && !isUrgent;
             const isExpanded = expandedTaskId === task.id;
 
             return (
@@ -268,6 +273,7 @@ export const TasksView = () => {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-md border uppercase tracking-wider hidden sm:block ${
+                    priority === 'overdue' ? 'text-white bg-red-600 border-red-600 animate-pulse' :
                     priority === 'high' ? 'text-rose-500 bg-rose-50 border-rose-200' :
                     priority === 'medium' ? 'text-amber-500 bg-amber-50 border-amber-200' :
                     'text-slate-500 bg-slate-50 border-slate-200'
