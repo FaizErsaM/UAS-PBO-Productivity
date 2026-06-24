@@ -5,6 +5,12 @@ export interface Task {
   deadline: string;
   completed: boolean;
   priority: "high" | "medium" | "low";
+  description?: string;
+  attachment?: {
+    originalName: string;
+    contentType: string;
+    size: number;
+  };
   aiMaterials?: { title: string; type: string; link: string }[];
 }
 
