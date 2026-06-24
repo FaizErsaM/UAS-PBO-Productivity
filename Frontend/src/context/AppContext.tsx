@@ -40,6 +40,11 @@ interface AppContextType {
   ) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   getAttachmentUrl: (taskId: string) => string;
+  sendTestEmail: (
+    taskId: string,
+    type: "approaching" | "overdue",
+  ) => Promise<{ sent: boolean; recipient?: string; subject?: string; error?: string }>;
+  clearNotificationLog: (taskId: string) => Promise<void>;
   addHabit: (habit: Omit<Habit, "id">) => Promise<void>;
   toggleHabitForToday: (id: string) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
@@ -76,6 +81,29 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+/**
+ * Backend (TaskModel) mengirim field attachment yang FLAT:
+ *   attachmentOriginalName, attachmentStoredName, attachmentContentType, attachmentSize
+ * Sedangkan frontend (Task interface di mockData.ts) expect nested object:
+ *   task.attachment = { originalName, contentType, size }
+ *
+ * Helper ini menormalisasi response backend supaya UI bisa baca task.attachment.
+ * Pure function, gak butuh React state.
+ */
+const normalizeTaskAttachment = (t: any): Task => {
+  const { attachmentStoredName, attachmentOriginalName, attachmentContentType, attachmentSize, ...rest } = t;
+  return {
+    ...rest,
+    attachment: attachmentStoredName
+      ? {
+          originalName: attachmentOriginalName,
+          contentType: attachmentContentType,
+          size: attachmentSize,
+        }
+      : undefined,
+  } as Task;
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -123,6 +151,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const getAttachmentUrl = useCallback(
     (taskId: string) => `${API_BASE_URL}/tasks/${taskId}/attachment`,
     [],
+  );
+
+  // Kirim email notifikasi test untuk task tertentu. BYPASS guard backend.
+  // Return { sent, recipient, subject, error? }.
+  const sendTestEmail = useCallback(
+    async (taskId: string, type: "approaching" | "overdue") => {
+      const res = await fetch(
+        `${API_BASE_URL}/notifications/test-email/${taskId}?type=${type}`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+        },
+      );
+      if (!res.ok) throw new Error("Gagal kirim test email");
+      return res.json();
+    },
+    [getAuthHeaders],
+  );
+
+  // Hapus notification log untuk task supaya bisa di-notify ulang.
+  const clearNotificationLog = useCallback(
+    async (taskId: string) => {
+      await fetch(`${API_BASE_URL}/notifications/log/${taskId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+    },
+    [getAuthHeaders],
   );
 
   useEffect(() => {
@@ -192,7 +248,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json();
-        setTasks(tasksData);
+        const normalized = tasksData.map((t: any) => normalizeTaskAttachment(t));
+        setTasks(normalized);
       }
       if (habitsRes.ok) {
         const habitsData = await habitsRes.json();
@@ -251,7 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const newTask = await response.json();
-      setTasks((prev) => [...prev, newTask]);
+      setTasks((prev) => [...prev, normalizeTaskAttachment(newTask)]);
     }, "Tugas ditambahkan");
   };
 
@@ -288,7 +345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const updated = await response.json();
-      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      setTasks((prev) => prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)));
     }, "Tugas berhasil diperbarui");
   };
 
@@ -302,7 +359,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!response.ok) throw new Error("Gagal memperbarui status tugas");
 
       const updated = await response.json();
-      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      setTasks((prev) => prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)));
     }, "Status tugas diperbarui");
   };
 
@@ -492,6 +549,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         updateTask,
         deleteTask,
         getAttachmentUrl,
+        sendTestEmail,
+        clearNotificationLog,
         addHabit,
         toggleHabitForToday,
         deleteHabit,
