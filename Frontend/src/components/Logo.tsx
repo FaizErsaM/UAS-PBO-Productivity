@@ -29,7 +29,7 @@ export const Logo = ({ className = "h-8" }: { className?: string }) => {
       
       {/* HeyJipro Text Logo */}
       <div className="font-bold text-2xl tracking-tight hidden md:flex items-center">
-        <span className="text-[#0F172A]">HEY</span>
+        <span className="text-current">HEY</span>
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA]">JIPRO</span>
       </div>
     </div>

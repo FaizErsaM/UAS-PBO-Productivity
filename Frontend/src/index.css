@@ -37,39 +37,122 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
-/* CSS Overrides for Dark Mode */
+/* ============================================================
+   CSS Overrides untuk Dark Mode
+   PERBAIKAN: sebelumnya hanya beberapa class (.bg-white, .bg-slate-50,
+   .bg-slate-100, .text-navy, .text-slate-300/400/500/600,
+   .border-slate-100/200) yang di-override. Banyak komponen
+   (terutama SettingsView) memakai shade lain (bg-slate-200/300/700/800/900,
+   bg-gray-50, text-slate-700/800, border-slate-300/600/700/800, dst)
+   sehingga tetap putih/​tidak terbaca saat dark mode aktif.
+   Daftar di bawah ini dilengkapi supaya konsisten di seluruh aplikasi.
+   ============================================================ */
 html.dark body {
   background-color: #0F172A; /* navy */
   color: #F9FAFB;
 }
 
+/* --- Background --- */
 html.dark .bg-white {
   background-color: #1E293B; /* navy-light */
   border-color: #334155;
 }
 
+html.dark .bg-gray-50,
+html.dark .bg-slate-50 {
+  background-color: #1E293B;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #334155;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #475569;
+}
+
+html.dark .bg-slate-300 {
+  background-color: #64748B;
+}
+
+html.dark .bg-slate-700,
+html.dark .bg-slate-800,
+html.dark .bg-slate-900 {
+  background-color: #0F172A;
+}
+
+/* Varian opacity (bg-slate-50/50, bg-slate-50/30, dst) — selector class
+   harus persis sama termasuk garis miringnya, beda dari .bg-slate-50 biasa */
+html.dark .bg-slate-50\/10,
+html.dark .bg-slate-50\/30,
+html.dark .bg-slate-50\/50 {
+  background-color: rgba(51, 65, 85, 0.5); /* slate-700/50 */
+}
+
+html.dark .border-slate-200\/60 {
+  border-color: rgba(71, 85, 105, 0.6) !important; /* slate-600/60 */
+}
+
+html.dark .border-slate-700\/50 {
+  border-color: rgba(51, 65, 85, 0.5) !important;
+}
+
+/* --- Text --- */
 html.dark .text-navy {
   color: #F9FAFB; /* white */
 }
 
-html.dark .text-slate-600, html.dark .text-slate-500 {
-  color: #cbd5e1; /* slate-300 */
+html.dark .text-slate-700,
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html.dark .text-gray-700,
+html.dark .text-gray-800,
+html.dark .text-gray-900 {
+  color: #E2E8F0;
 }
 
-html.dark .text-slate-400, html.dark .text-slate-300 {
-  color: #94a3b8; /* slate-400 */
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+  color: #CBD5E1; /* slate-300 */
 }
 
-html.dark .bg-slate-50 {
-  background-color: #334155;
+html.dark .text-slate-400,
+html.dark .text-slate-300,
+html.dark .text-gray-400,
+html.dark .text-gray-300 {
+  color: #94A3B8; /* slate-400 */
 }
 
-html.dark .bg-slate-100 {
-  background-color: #475569;
-}
-
-html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-neutral-light {
+/* --- Border --- */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-gray-200,
+html.dark .border-neutral-light {
   border-color: #334155 !important;
+}
+
+html.dark .border-slate-300,
+html.dark .border-slate-600,
+html.dark .border-slate-700,
+html.dark .border-slate-800 {
+  border-color: #475569 !important;
+}
+
+/* Placeholder pada input ikut menyesuaikan, jangan sampai gelap-di-gelap */
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748B;
+}
+
+/* Shadow lembut bawaan light-mode terlalu mencolok di atas background gelap */
+html.dark .shadow-soft,
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
 
 /* Custom Utilities for the Float Card Feel */

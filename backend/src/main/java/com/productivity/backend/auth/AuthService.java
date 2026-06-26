@@ -32,7 +32,7 @@ public class AuthService {
         // 1. Validasi jika email sudah digunakan
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
         if (existingUser.isPresent()) {
-            return ResponseEntity.badRequest().body("Email sudah digunakan");
+            return ResponseEntity.badRequest().body(Map.of("message", "Email sudah digunakan"));
         }
 
         // 2. Simpan data ke tabel 'users'
@@ -91,7 +91,7 @@ public class AuthService {
 
         settingRepository.save(setting);
 
-        return ResponseEntity.ok("Register berhasil");
+        return ResponseEntity.ok(Map.of("message", "Register berhasil"));
     }
 
     public ResponseEntity<?> login(LoginRequest request) {
