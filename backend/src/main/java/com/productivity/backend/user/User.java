@@ -18,7 +18,8 @@ public class User {
 
     private String password;
 
-    private String authProvider;
+    @Column(name = "auth_provider")
+    private String authProvider = "local";
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
