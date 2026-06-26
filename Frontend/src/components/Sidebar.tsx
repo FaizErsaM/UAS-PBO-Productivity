@@ -54,13 +54,13 @@ export const Sidebar = ({
   };
 
   return (
-    <aside className={`fixed left-0 top-0 h-screen w-64 bg-navy text-white flex flex-col pt-8 pb-6 px-4 z-40 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+    <aside className={`fixed left-0 top-0 h-screen w-64 bg-white text-navy border-r border-slate-200 dark:bg-navy dark:text-white dark:border-transparent flex flex-col pt-8 pb-6 px-4 z-40 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
       <div className="flex items-center justify-between px-4 mb-10">
-        <Logo className="h-10 text-white" />
+        <Logo className="h-10 text-navy dark:text-white" />
         {setIsOpen && (
           <button 
             onClick={() => setIsOpen(false)}
-            className="lg:hidden p-1.5 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="lg:hidden p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-300 hover:text-navy dark:hover:text-white transition-colors cursor-pointer"
             aria-label="Close sidebar"
           >
             <X className="w-5 h-5" />
@@ -80,7 +80,7 @@ export const Sidebar = ({
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
               activeView === item.id 
                 ? 'bg-soft-blue/20 text-soft-blue-light font-medium shadow-[inset_2px_0_0_0_#3B82F6]' 
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-navy dark:hover:text-white'
             }`}
           >
             <item.icon className="w-5 h-5" />
@@ -95,7 +95,7 @@ export const Sidebar = ({
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors cursor-pointer ${
             activeView === 'settings' 
               ? 'bg-soft-blue/20 text-soft-blue-light font-medium shadow-[inset_2px_0_0_0_#3B82F6]' 
-              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-navy dark:hover:text-white'
           }`}
         >
           <Settings className="w-5 h-5" />
@@ -103,7 +103,7 @@ export const Sidebar = ({
         </button>
         <button 
           onClick={onLogout} 
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-red-400 transition-colors cursor-pointer"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
         >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
@@ -118,17 +118,17 @@ export const Sidebar = ({
           </button>
         )}
         {/* User Profile Snippet */}
-        <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-3 px-2">
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/50 flex items-center gap-3 px-2">
           <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-purple to-soft-blue p-[2px]">
             <img 
               src={profilePic} 
               alt="User Avatar"
-              className="w-full h-full rounded-full object-cover bg-navy"
+              className="w-full h-full rounded-full object-cover bg-slate-100 dark:bg-navy"
             />
           </div>
           <div className="max-w-[120px] truncate">
-            <p className="text-sm font-semibold text-white truncate" title={`${firstName} ${lastName}`}>{firstName} {lastName}</p>
-            <p className="text-[10px] text-slate-400 font-semibold bg-white/10 px-1.5 py-0.5 rounded-full w-max mt-0.5">Jipro Premium Acc</p>
+            <p className="text-sm font-semibold text-navy dark:text-white truncate" title={`${firstName} ${lastName}`}>{firstName} {lastName}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-full w-max mt-0.5">Jipro Premium Acc</p>
           </div>
         </div>
       </div>
