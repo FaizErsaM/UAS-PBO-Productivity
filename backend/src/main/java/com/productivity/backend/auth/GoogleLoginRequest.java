@@ -30,3 +30,4 @@ public class GoogleLoginRequest {
         this.picture = picture;
     }
 }
+

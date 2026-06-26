@@ -60,9 +60,11 @@ const AuthModalContent = ({
     }
 
     try {
+      const BASE_URL =
+        import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8081/api";
       const endpoint = isLogin
-        ? `${import.meta.env.VITE_BACKEND_API_URL}/auth/login`
-        : `${import.meta.env.VITE_BACKEND_API_URL}/auth/register`;
+        ? `${BASE_URL}/auth/login`
+        : `${BASE_URL}/auth/register`;
 
       const bodyData = isLogin
         ? { email, password }
@@ -76,10 +78,31 @@ const AuthModalContent = ({
         body: JSON.stringify(bodyData),
       });
 
-      const result = await response.json();
+      // PERBAIKAN: jangan langsung response.json() — kalau backend
+      // mengirim teks biasa (bukan JSON), ini akan throw dan memicu
+      // alert() bawaan browser ("... is not valid JSON").
+      const rawText = await response.text();
+      let result: any = {};
+      if (rawText) {
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          result = { message: rawText };
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(result.message || "Terjadi kesalahan autentikasi");
+        // Spring Boot default error JSON pakai field "error"/"path" (bukan
+        // "message") untuk error yang tidak ditangani manual (mis. 500).
+        // Coba beberapa kemungkinan field supaya error asli tidak
+        // tersembunyi di balik pesan generik.
+        const backendMessage =
+          result?.message || result?.error || result?.detail;
+        throw new Error(
+          backendMessage
+            ? `${backendMessage}${result?.status ? ` (${result.status})` : ""}`
+            : `Terjadi kesalahan (status ${response.status}). Cek console/log backend untuk detail.`,
+        );
       }
 
       if (isLogin) {
@@ -90,50 +113,23 @@ const AuthModalContent = ({
         onLogin();
         onClose();
       } else {
+        executeWithFeedback(async () => {}, "Akun berhasil dibuat, silakan login.");
         setIsLogin(true);
         alert("Pendaftaran berhasil! Silakan masuk.");
       }
     } catch (error: any) {
-      alert(error.message || "Terjadi kesalahan");
+      console.error("Auth error:", error);
+      executeWithFeedback(async () => {
+        throw new Error(error.message || "Terjadi kesalahan");
+      }, "");
     }
   };
 
-  // Google Login Hook
-  const handleGoogleAuth = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_API_URL}/auth/google`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ token: tokenResponse.access_token }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          const errorMessage = result.message || JSON.stringify(result);
-          throw new Error(errorMessage);
-        }
-
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userEmail", result.user.email);
-        loginUser(result.token, result.user);
-
-        onLogin();
-        onClose();
-      } catch (error: any) {
-        alert(error.message || "Terjadi kesalahan saat verifikasi Google");
-      }
-    },
-    onError: () => {
-      alert("Login Google dibatalkan atau gagal.");
-    },
-  });
+  const handleGoogleAuth = async () => {
+    executeWithFeedback(async () => {
+      throw new Error("Fitur Google Login sedang dalam pengembangan");
+    }, "");
+  };
 
   const startForgotPassword = () => {
     setForgotStep("email_input");

@@ -364,10 +364,17 @@ export const HabitsView = () => {
                 required
                 type="number"
                 min="1"
+                max="31"
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/50"
                 value={targetPeriod}
-                onChange={(e) => setTargetPeriod(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 1;
+                  setTargetPeriod(Math.min(31, Math.max(1, val)));
+                }}
               />
+              {targetPeriod > 31 && (
+                <p className="text-xs text-rose-500 mt-1">Maksimal 31 hari</p>
+              )}
             </div>
             <div className="pt-4 flex justify-end gap-3">
               <button
