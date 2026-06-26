@@ -1,12 +1,16 @@
-export const calculatePriority = (deadlineIso: string): 'high' | 'medium' | 'low' => {
+export const calculatePriority = (
+  deadlineIso: string,
+): 'overdue' | 'high' | 'medium' | 'low' => {
   if (!deadlineIso) return 'low';
-  
+
   const deadlineTime = new Date(deadlineIso).getTime();
   if (isNaN(deadlineTime)) return 'low'; // fallback for existing string data like "Tomorrow"
-  
+
   const now = new Date().getTime();
   const diffHours = (deadlineTime - now) / (1000 * 60 * 60);
 
+  // Deadline sudah lewat -> overdue (TERLAMBAT, urgent)
+  if (diffHours < 0) return 'overdue';
   if (diffHours <= 24) return 'high';
   if (diffHours <= 72) return 'medium';
   return 'low';

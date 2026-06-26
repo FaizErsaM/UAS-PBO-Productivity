@@ -4,7 +4,13 @@ export interface Task {
   course?: string;
   deadline: string;
   completed: boolean;
-  priority: "high" | "medium" | "low";
+  priority: "overdue" | "high" | "medium" | "low";
+  description?: string;
+  attachment?: {
+    originalName: string;
+    contentType: string;
+    size: number;
+  };
   aiMaterials?: { title: string; type: string; link: string }[];
 }
 

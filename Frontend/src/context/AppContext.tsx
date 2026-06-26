@@ -30,10 +30,21 @@ interface AppContextType {
   feedback: FeedbackState;
   toggleTheme: () => void;
   setTheme: (theme: "light" | "dark") => void;
-  addTask: (task: Omit<Task, "id">) => Promise<void>;
+  addTask: (task: Omit<Task, "id">, file?: File | null) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
-  updateTask: (id: string, updatedData: Partial<Task>) => Promise<void>;
+  updateTask: (
+    id: string,
+    updatedData: Partial<Task>,
+    file?: File | null,
+    removeFile?: boolean,
+  ) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
+  getAttachmentUrl: (taskId: string) => string;
+  sendTestEmail: (
+    taskId: string,
+    type: "approaching" | "overdue",
+  ) => Promise<{ sent: boolean; recipient?: string; subject?: string; error?: string }>;
+  clearNotificationLog: (taskId: string) => Promise<void>;
   addHabit: (habit: Omit<Habit, "id">) => Promise<void>;
   toggleHabitForToday: (id: string) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
@@ -71,6 +82,29 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+/**
+ * Backend (TaskModel) mengirim field attachment yang FLAT:
+ *   attachmentOriginalName, attachmentStoredName, attachmentContentType, attachmentSize
+ * Sedangkan frontend (Task interface di mockData.ts) expect nested object:
+ *   task.attachment = { originalName, contentType, size }
+ *
+ * Helper ini menormalisasi response backend supaya UI bisa baca task.attachment.
+ * Pure function, gak butuh React state.
+ */
+const normalizeTaskAttachment = (t: any): Task => {
+  const { attachmentStoredName, attachmentOriginalName, attachmentContentType, attachmentSize, ...rest } = t;
+  return {
+    ...rest,
+    attachment: attachmentStoredName
+      ? {
+          originalName: attachmentOriginalName,
+          contentType: attachmentContentType,
+          size: attachmentSize,
+        }
+      : undefined,
+  } as Task;
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -105,6 +139,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   }, []);
+
+  // Sama seperti getAuthHeaders, tapi TANPA Content-Type.
+  // Dipakai untuk multipart/form-data — browser yang set boundary otomatis.
+  const getAuthHeadersForFormData = useCallback(() => {
+    const token = localStorage.getItem("heyjipro_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, []);
+
+  // URL download dokumen task
+  const getAttachmentUrl = useCallback(
+    (taskId: string) => `${API_BASE_URL}/tasks/${taskId}/attachment`,
+    [],
+  );
+
+  // Kirim email notifikasi test untuk task tertentu. BYPASS guard backend.
+  // Return { sent, recipient, subject, error? }.
+  const sendTestEmail = useCallback(
+    async (taskId: string, type: "approaching" | "overdue") => {
+      const res = await fetch(
+        `${API_BASE_URL}/notifications/test-email/${taskId}?type=${type}`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+        },
+      );
+      if (!res.ok) throw new Error("Gagal kirim test email");
+      return res.json();
+    },
+    [getAuthHeaders],
+  );
+
+  // Hapus notification log untuk task supaya bisa di-notify ulang.
+  const clearNotificationLog = useCallback(
+    async (taskId: string) => {
+      await fetch(`${API_BASE_URL}/notifications/log/${taskId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+    },
+    [getAuthHeaders],
+  );
 
   useEffect(() => {
     if (theme === "dark") {
@@ -173,7 +248,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json();
-        setTasks(tasksData);
+        const normalized = tasksData.map((t: any) => normalizeTaskAttachment(t));
+        setTasks(normalized);
       }
       if (habitsRes.ok) {
         const habitsData = await habitsRes.json();
@@ -203,41 +279,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, fetchDataFromBackend]);
 
   // 3. Operasi CRUD yang disematkan Header Keamanan
-  const addTask = async (task: Omit<Task, "id">) => {
+  const addTask = async (
+    task: Omit<Task, "id">,
+    file: File | null = null,
+  ) => {
     if (!user) throw new Error("User tidak terautentikasi.");
     await executeWithFeedback(async () => {
+      const formData = new FormData();
+      // part "task" sebagai JSON blob
+      formData.append(
+        "task",
+        new Blob([JSON.stringify({ ...task, userId: user.id })], {
+          type: "application/json",
+        }),
+      );
+      if (file) {
+        formData.append("file", file);
+      }
+
       const response = await fetch(`${API_BASE_URL}/tasks`, {
         method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ ...task, userId: user.id }),
+        headers: getAuthHeadersForFormData(),
+        body: formData,
       });
-      if (!response.ok) throw new Error("Gagal menyimpan tugas ke server");
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Gagal menyimpan tugas ke server");
+      }
 
       const newTask = await response.json();
-      setTasks((prev) => [...prev, newTask]);
+      setTasks((prev) => [...prev, normalizeTaskAttachment(newTask)]);
     }, "Tugas ditambahkan");
   };
 
-  const updateTask = async (id: string, updatedData: Partial<Task>) => {
+  const updateTask = async (
+    id: string,
+    updatedData: Partial<Task>,
+    file: File | null = null,
+    removeFile: boolean = false,
+  ) => {
     if (!user) throw new Error("User tidak terautentikasi.");
     await executeWithFeedback(async () => {
-      const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(updatedData),
-      });
-      if (!response.ok) throw new Error("Gagal memperbarui tugas");
-
-      setTasks((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...updatedData } : t)),
+      const formData = new FormData();
+      formData.append(
+        "task",
+        new Blob([JSON.stringify(updatedData)], { type: "application/json" }),
       );
+      if (file) {
+        formData.append("file", file);
+      }
+
+      const url = new URL(`${API_BASE_URL}/tasks/${id}`);
+      if (removeFile) {
+        url.searchParams.set("removeFile", "true");
+      }
+
+      const response = await fetch(url.toString(), {
+        method: "PUT",
+        headers: getAuthHeadersForFormData(),
+        body: formData,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Gagal memperbarui tugas");
+      }
+
+      const updated = await response.json();
+      setTasks((prev) => prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)));
     }, "Tugas berhasil diperbarui");
   };
 
   const toggleTask = async (id: string) => {
-    const taskObj = tasks.find((t) => t.id === id);
-    if (!taskObj) return;
-    await updateTask(id, { completed: !taskObj.completed });
+    if (!user) throw new Error("User tidak terautentikasi.");
+    await executeWithFeedback(async () => {
+      const response = await fetch(`${API_BASE_URL}/tasks/${id}/toggle`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Gagal memperbarui status tugas");
+
+      const updated = await response.json();
+      setTasks((prev) => prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)));
+    }, "Status tugas diperbarui");
   };
 
   const deleteTask = async (id: string) => {
@@ -425,6 +548,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         toggleTask,
         updateTask,
         deleteTask,
+        getAttachmentUrl,
+        sendTestEmail,
+        clearNotificationLog,
         addHabit,
         toggleHabitForToday,
         deleteHabit,

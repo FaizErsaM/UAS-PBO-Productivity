@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu, Clock } from 'lucide-react';
+import { Menu, Clock } from 'lucide-react';
+import { NotificationBell } from './NotificationBell';
 
 export const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   const [time, setTime] = useState(new Date());
@@ -67,10 +68,7 @@ export const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
       </div>
 
       <div className="flex items-center gap-4 self-end sm:self-auto">
-        <button className="p-2.5 bg-white border border-neutral-light rounded-xl text-slate-500 hover:text-navy hover:bg-slate-50 transition-all shadow-sm relative cursor-pointer">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-        </button>
+        <NotificationBell />
       </div>
     </header>
   );
