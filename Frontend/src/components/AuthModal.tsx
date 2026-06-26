@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion"; 
+import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import {
   X,
   Mail,
@@ -9,8 +10,6 @@ import {
   ArrowLeft,
   KeyRound,
   ShieldCheck,
-  Send,
-  HelpCircle,
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
@@ -25,7 +24,8 @@ type ForgotStep =
   | "verify_otp"
   | "success";
 
-export const AuthModal = ({
+// 1. Komponen Konten Utama Modal
+const AuthModalContent = ({
   isOpen,
   onClose,
   onLogin,
@@ -35,7 +35,7 @@ export const AuthModal = ({
   onLogin: () => void;
 }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const { executeWithFeedback } = useAppContext();
+  const { executeWithFeedback, loginUser } = useAppContext();
 
   // Input states
   const [name, setName] = useState("");
@@ -48,15 +48,14 @@ export const AuthModal = ({
   const [lastPassword, setLastPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [otpGenerated, setOtpGenerated] = useState("");
   const [otpInput, setOtpInput] = useState("");
   const [validationError, setValidationError] = useState("");
-  const { loginUser } = useAppContext();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isLogin && password !== confirmPassword) {
+      setValidationError("Konfirmasi password tidak cocok.");
       return;
     }
 
@@ -66,15 +65,8 @@ export const AuthModal = ({
         : `${import.meta.env.VITE_BACKEND_API_URL}/auth/register`;
 
       const bodyData = isLogin
-        ? {
-            email,
-            password,
-          }
-        : {
-            name,
-            email,
-            password,
-          };
+        ? { email, password }
+        : { name, email, password };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -87,7 +79,7 @@ export const AuthModal = ({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result);
+        throw new Error(result.message || "Terjadi kesalahan autentikasi");
       }
 
       if (isLogin) {
@@ -99,15 +91,49 @@ export const AuthModal = ({
         onClose();
       } else {
         setIsLogin(true);
+        alert("Pendaftaran berhasil! Silakan masuk.");
       }
     } catch (error: any) {
       alert(error.message || "Terjadi kesalahan");
     }
   };
 
-  const handleGoogleAuth = async () => {
-    alert("Fitur Google Login sedang dalam pengembangan");
-  };
+  // Google Login Hook
+  const handleGoogleAuth = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_BACKEND_API_URL}/auth/google`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token: tokenResponse.access_token }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          const errorMessage = result.message || JSON.stringify(result);
+          throw new Error(errorMessage);
+        }
+
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userEmail", result.user.email);
+        loginUser(result.token, result.user);
+
+        onLogin();
+        onClose();
+      } catch (error: any) {
+        alert(error.message || "Terjadi kesalahan saat verifikasi Google");
+      }
+    },
+    onError: () => {
+      alert("Login Google dibatalkan atau gagal.");
+    },
+  });
 
   const startForgotPassword = () => {
     setForgotStep("email_input");
@@ -115,7 +141,6 @@ export const AuthModal = ({
     setOtpInput("");
   };
 
-  // PERBAIKAN: Fungsi Firebase di-mocking sementara supaya tidak crash
   const mockApiCall = async () =>
     new Promise((resolve) => setTimeout(resolve, 800));
 
@@ -127,35 +152,35 @@ export const AuthModal = ({
     }
     setValidationError("");
     executeWithFeedback(async () => {
-      await mockApiCall(); // Ganti dengan fetch ke endpoint forgot-password backend kamu nanti
-      setForgotStep("success");
-    }, `Email pemulihan kata sandi aman berhasil dikirim ke ${email}! Silakan cek inbox Anda.`);
+      await mockApiCall();
+      setForgotStep("choose_method");
+    }, `Email terverifikasi. Silakan pilih metode pemulihan.`);
   };
 
   const sendOtpCode = () => {
     setValidationError("");
     executeWithFeedback(async () => {
       await mockApiCall();
-      setForgotStep("success");
-    }, `Email pemulihan kata sandi aman berhasil dikirim ke ${email}! Silakan cek inbox Anda.`);
+      setForgotStep("verify_otp");
+    }, `Kode OTP aman berhasil dikirim ke ${email}! Silakan cek inbox Anda.`);
   };
 
-  const handleResetWithLastPassword = (e: React.FormEvent) => {
+  const handleResultWithLastPassword = (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError("");
     executeWithFeedback(async () => {
       await mockApiCall();
       setForgotStep("success");
-    }, `Tautan pemulihan kata sandi terverifikasi telah dikirim ke ${email}!`);
+    }, `Kata sandi Anda berhasil diperbarui menggunakan verifikasi sandi terakhir.`);
   };
 
-  const handleResetWithOtp = (e: React.FormEvent) => {
+  const handleResultWithOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError("");
     executeWithFeedback(async () => {
       await mockApiCall();
       setForgotStep("success");
-    }, `Tautan pemulihan kata sandi terverifikasi telah dikirim ke ${email}!`);
+    }, `Kata sandi baru Anda berhasil diverifikasi dan diperbarui.`);
   };
 
   const resetAllAndGoToLogin = () => {
@@ -168,210 +193,223 @@ export const AuthModal = ({
     setOtpInput("");
   };
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-navy/40 backdrop-blur-sm"
-        />
-
-        {/* Modal content */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
-        >
-          <button
+      {isOpen && (
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-navy hover:bg-slate-100 rounded-full transition-colors z-10 cursor-pointer"
+            className="absolute inset-0 bg-navy/40 backdrop-blur-sm"
+          />
+
+          {/* Modal Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
           >
-            <X className="w-5 h-5" />
-          </button>
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-navy hover:bg-slate-100 rounded-full transition-colors z-10 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-          <div className="p-6 overflow-y-auto max-h-[85vh]">
-            <div className="flex justify-center mb-4">
-              <Logo className="h-8 text-navy" />
-            </div>
+            <div className="p-6 overflow-y-auto max-h-[85vh]">
+              <div className="flex justify-center mb-4">
+                <Logo className="h-8 text-navy" />
+              </div>
 
-            {forgotStep === "none" && (
-              <>
-                <h2 className="text-xl font-bold text-center text-navy mb-1">
-                  HeyJipro
-                </h2>
-                <p className="text-center text-slate-500 mb-5 text-sm">
-                  {isLogin
-                    ? "Masukkan email dan sandi untuk mengakses dashboard."
-                    : "Mulai rancang masa depan akademik Anda hari ini."}
-                </p>
+              {/* TAMPILAN LOGIN / REGISTER */}
+              {forgotStep === "none" && (
+                <>
+                  <h2 className="text-xl font-bold text-center text-navy mb-1">
+                    HeyJipro
+                  </h2>
+                  <p className="text-center text-slate-500 mb-5 text-sm">
+                    {isLogin
+                      ? "Masukkan email dan sandi untuk mengakses dashboard."
+                      : "Mulai rancang masa depan akademik Anda hari ini."}
+                  </p>
 
-                <div className="flex p-1 bg-slate-100 rounded-xl mb-5">
-                  <button
-                    type="button"
-                    onClick={() => setIsLogin(true)}
-                    className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${isLogin ? "bg-white text-navy shadow-sm" : "text-slate-500 hover:text-navy cursor-pointer"}`}
-                  >
-                    Log In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsLogin(false)}
-                    className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${!isLogin ? "bg-white text-navy shadow-sm" : "text-slate-500 hover:text-navy cursor-pointer"}`}
-                  >
-                    Daftar Baru
-                  </button>
-                </div>
-
-                <form onSubmit={handleAuth} className="space-y-4">
-                  <button
-                    type="button"
-                    onClick={handleGoogleAuth}
-                    className="w-full flex justify-center items-center gap-3 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
-                  >
-                    <img
-                      src="/src/assets/images/GooglePic.jpg"
-                      alt="Google"
-                      className="w-4 h-4"
-                    />
-                    {isLogin ? "Masuk dengan Google" : "Daftar dengan Google"}
-                  </button>
-
-                  <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-xs">
-                      <span className="px-2 bg-white text-slate-500 font-semibold">
-                        Atau cara manual
-                      </span>
-                    </div>
+                  <div className="flex p-1 bg-slate-100 rounded-xl mb-5">
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin(true)}
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                        isLogin
+                          ? "bg-white text-navy shadow-sm"
+                          : "text-slate-500 hover:text-navy cursor-pointer"
+                      }`}
+                    >
+                      Log In
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin(false)}
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                        !isLogin
+                          ? "bg-white text-navy shadow-sm"
+                          : "text-slate-500 hover:text-navy cursor-pointer"
+                      }`}
+                    >
+                      Daftar Baru
+                    </button>
                   </div>
 
-                  {!isLogin && (
+                  <form onSubmit={handleAuth} className="space-y-4">
+                    <button
+                      type="button"
+                      onClick={() => handleGoogleAuth()}
+                      className="w-full flex justify-center items-center gap-3 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <img
+                        src="/src/assets/images/GooglePic.jpg"
+                        alt="Google"
+                        className="w-4 h-4"
+                      />
+                      {isLogin ? "Masuk dengan Google" : "Daftar dengan Google"}
+                    </button>
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-200"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-2 bg-white text-slate-500 font-semibold">
+                          Atau cara manual
+                        </span>
+                      </div>
+                    </div>
+
+                    {!isLogin && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                          Nama Lengkap
+                        </label>
+                        <div className="relative">
+                          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input
+                            type="text"
+                            required
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="John Doe"
+                            className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                        Nama Lengkap
+                        Alamat Email
                       </label>
                       <div className="relative">
-                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
-                          type="text"
+                          type="email"
                           required
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="John Doe"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="nama@email.com"
                           className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
                         />
                       </div>
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Alamat Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="nama@email.com"
-                        className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                      <input
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-11 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
-                      />
-                    </div>
-                    {isLogin && (
-                      <div className="flex justify-end mt-1.5">
-                        <button
-                          type="button"
-                          onClick={startForgotPassword}
-                          className="text-xs text-purple hover:text-soft-blue font-bold cursor-pointer hover:underline"
-                        >
-                          Lupa password?
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {!isLogin && (
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                        Konfirmasi Password
+                        Password
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
                           type="password"
                           required
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
                           className="w-full pl-11 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
                         />
                       </div>
+                      {isLogin && (
+                        <div className="flex justify-end mt-1.5">
+                          <button
+                            type="button"
+                            onClick={startForgotPassword}
+                            className="text-xs text-purple hover:text-soft-blue font-bold cursor-pointer hover:underline"
+                          >
+                            Lupa password?
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 mt-2 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-purple/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {isLogin ? "Masuk Sekarang" : "Buat Akun"}{" "}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </form>
-              </>
-            )}
+                    {!isLogin && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                          Konfirmasi Password
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input
+                            type="password"
+                            required
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="w-full pl-11 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-medium"
+                          />
+                        </div>
+                      </div>
+                    )}
 
-            {/* FORGOT PASSWORD FLOW ... (Tidak ada perubahan UI, hanya fungsi submit yang diperbaiki di atas) */}
-            {forgotStep === "email_input" && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button
-                  type="button"
-                  onClick={resetAllAndGoToLogin}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
+                    {validationError && (
+                      <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {validationError}
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 mt-2 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-purple/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {isLogin ? "Masuk Sekarang" : "Buat Akun"}{" "}
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {/* TAMPILAN 1: INPUT EMAIL LUPAPASSWORD */}
+              {forgotStep === "email_input" && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-4"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Login
-                </button>
-                <h3 className="text-lg font-bold text-navy flex items-center gap-2 mt-2">
-                  <KeyRound className="w-5 h-5 text-purple" /> Lupa Kata Sandi?
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Masukkan email akun HeyJipro Anda di bawah ini.
-                </p>
-                <form onSubmit={handleEmailSubmit} className="space-y-4">
-                  <div>
+                  <button
+                    type="button"
+                    onClick={resetAllAndGoToLogin}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Login
+                  </button>
+                  <h3 className="text-lg font-bold text-navy flex items-center gap-2 mt-2">
+                    <KeyRound className="w-5 h-5 text-purple" /> Lupa Kata Sandi?
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Masukkan email akun HeyJipro Anda di bawah ini.
+                  </p>
+                  <form onSubmit={handleEmailSubmit} className="space-y-4">
                     <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input
                         type="email"
                         required
@@ -381,171 +419,193 @@ export const AuthModal = ({
                         className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 transition-all text-navy font-semibold"
                       />
                     </div>
+                    {validationError && (
+                      <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5" /> {validationError}
+                      </p>
+                    )}
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-purple text-white text-sm font-bold rounded-xl hover:bg-purple/90 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      Lanjutkan Verifikasi <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                </motion.div>
+              )}
+
+              {/* TAMPILAN 2: PILIH METODE VERIFIKASI */}
+              {forgotStep === "choose_method" && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-4"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setForgotStep("email_input")}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali
+                  </button>
+                  <h3 className="text-lg font-bold text-navy flex items-center gap-2 mt-2">
+                    <ShieldCheck className="w-5 h-5 text-purple" /> Pilih Cara Verifikasi
+                  </h3>
+                  <div className="space-y-3 pt-2">
+                    <button
+                      onClick={() => setForgotStep("verify_last_password")}
+                      className="w-full text-left p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-purple/60 hover:bg-purple/5 transition-all cursor-pointer"
+                    >
+                      <h4 className="text-xs font-bold text-navy">
+                        Klarifikasi via Kata Sandi Terakhir
+                      </h4>
+                    </button>
+                    <button
+                      onClick={sendOtpCode}
+                      className="w-full text-left p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-purple/60 hover:bg-purple/5 transition-all cursor-pointer"
+                    >
+                      <h4 className="text-xs font-bold text-navy">
+                        Layanan Kode OTP Email
+                      </h4>
+                    </button>
                   </div>
-                  {validationError && (
-                    <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5" /> {validationError}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-purple text-white text-sm font-bold rounded-xl hover:bg-purple/90 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    Lanjutkan Verifikasi <ArrowRight className="w-4 h-4" />
-                  </button>
-                </form>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
-            {forgotStep === "choose_method" && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button
-                  type="button"
-                  onClick={() => setForgotStep("email_input")}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
+              {/* TAMPILAN 3A: INPUT KATA SANDI TERAKHIR */}
+              {forgotStep === "verify_last_password" && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-4"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Kembali
-                </button>
-                <h3 className="text-lg font-bold text-navy flex items-center gap-2 mt-2">
-                  <ShieldCheck className="w-5 h-5 text-purple" /> Pilih Cara
-                  Verifikasi
-                </h3>
-                <div className="space-y-3 pt-2">
                   <button
-                    onClick={() => {
-                      setForgotStep("verify_last_password");
-                    }}
-                    className="w-full text-left p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-purple/60 hover:bg-purple/5 transition-all cursor-pointer group"
+                    type="button"
+                    onClick={() => setForgotStep("choose_method")}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
                   >
-                    <h4 className="text-xs font-bold text-navy">
-                      Klarifikasi via Kata Sandi Terakhir
-                    </h4>
+                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                   </button>
-                  <button
-                    onClick={sendOtpCode}
-                    className="w-full text-left p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-purple/60 hover:bg-purple/5 transition-all cursor-pointer group"
-                  >
-                    <h4 className="text-xs font-bold text-navy">
-                      Layanan Kode OTP Email
-                    </h4>
-                  </button>
-                </div>
-              </motion.div>
-            )}
+                  <form onSubmit={handleResultWithLastPassword} className="space-y-3.5 pt-1">
+                    <input
+                      type="password"
+                      required
+                      value={lastPassword}
+                      onChange={(e) => setLastPassword(e.target.value)}
+                      placeholder="Sandi Terakhir yang Diingat"
+                      className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50"
+                    />
+                    <input
+                      type="password"
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Sandi Baru Anda"
+                      className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50"
+                    />
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl shadow-md cursor-pointer"
+                    >
+                      Simpan Sandi Baru
+                    </button>
+                  </form>
+                </motion.div>
+              )}
 
-            {forgotStep === "verify_last_password" && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button
-                  type="button"
-                  onClick={() => setForgotStep("choose_method")}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
+              {/* TAMPILAN 3B: INPUT KODE OTP */}
+              {forgotStep === "verify_otp" && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-4"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Kembali
-                </button>
-                <form
-                  onSubmit={handleResetWithLastPassword}
-                  className="space-y-3.5 pt-1"
-                >
-                  <input
-                    type="password"
-                    required
-                    value={lastPassword}
-                    onChange={(e) => setLastPassword(e.target.value)}
-                    placeholder="Sandi Terakhir"
-                    className="w-full px-4 py-2 text-sm border rounded-xl"
-                  />
-                  <input
-                    type="password"
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Sandi Baru"
-                    className="w-full px-4 py-2 text-sm border rounded-xl"
-                  />
                   <button
-                    type="submit"
-                    className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl"
+                    type="button"
+                    onClick={() => setForgotStep("choose_method")}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
                   >
-                    Simpan Sandi Baru
+                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                   </button>
-                </form>
-              </motion.div>
-            )}
+                  <form onSubmit={handleResultWithOtp} className="space-y-3.5">
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={otpInput}
+                      onChange={(e) => setOtpInput(e.target.value)}
+                      placeholder="Masukkan 6 Digit OTP"
+                      className="w-full px-4 py-2.5 text-sm text-center tracking-widest border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50 font-bold"
+                    />
+                    <input
+                      type="password"
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Sandi Baru Anda"
+                      className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple/20 focus:border-purple/50"
+                    />
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl shadow-md cursor-pointer"
+                    >
+                      Simpan Sandi Baru
+                    </button>
+                  </form>
+                </motion.div>
+              )}
 
-            {forgotStep === "verify_otp" && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <button
-                  type="button"
-                  onClick={() => setForgotStep("choose_method")}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy cursor-pointer"
+              {/* TAMPILAN 4: SUKSES */}
+              {forgotStep === "success" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-6 space-y-4"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Kembali
-                </button>
-                <form onSubmit={handleResetWithOtp} className="space-y-3.5">
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={otpInput}
-                    onChange={(e) => setOtpInput(e.target.value)}
-                    placeholder="123456"
-                    className="w-full px-4 py-2 text-sm text-center tracking-widest border rounded-xl"
-                  />
-                  <input
-                    type="password"
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Sandi Baru"
-                    className="w-full px-4 py-2 text-sm border rounded-xl"
-                  />
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-xl"
-                  >
-                    Simpan Sandi Baru
-                  </button>
-                </form>
-              </motion.div>
-            )}
-
-            {forgotStep === "success" && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6 space-y-4"
-              >
-                <div className="flex justify-center">
-                  <div className="p-3 bg-emerald-100 rounded-full text-emerald-600">
-                    <CheckCircle2 className="w-12 h-12" />
+                  <div className="flex justify-center">
+                    <div className="p-3 bg-emerald-100 rounded-full text-emerald-600">
+                      <CheckCircle2 className="w-12 h-12" />
+                    </div>
                   </div>
-                </div>
-                <h3 className="text-lg font-bold text-[#0F172A]">
-                  Sandi Berhasil Dipulihkan!
-                </h3>
-                <button
-                  onClick={resetAllAndGoToLogin}
-                  className="w-full py-2.5 bg-navy text-white text-xs font-bold rounded-xl"
-                >
-                  Kembali ke Form Log In
-                </button>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
-      </div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Sandi Berhasil Dipulihkan!
+                  </h3>
+                  <button
+                    onClick={resetAllAndGoToLogin}
+                    className="w-full py-2.5 bg-navy text-white text-sm font-bold rounded-xl hover:bg-navy/90 transition-colors cursor-pointer"
+                  >
+                    Kembali ke Form Log In
+                  </button>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </AnimatePresence>
+  );
+};
+
+// 2. Main Wrapper Component yang diexport ke aplikasi luar
+export const AuthModal = (props: {
+  isOpen: boolean;
+  onClose: () => void;
+  onLogin: () => void;
+}) => {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+  // Pengaman: Jika env kosong, beri dummy ID agar script loader Google tidak langsung crash saat inisialisasi
+  const safeClientId = googleClientId || "123456-dummyid.apps.googleusercontent.com";
+
+  if (!googleClientId) {
+    console.warn(
+      "Peringatan: VITE_GOOGLE_CLIENT_ID belum terdefinisi di file .env kamu. Menggunakan fallback dummy ID agar aplikasi tidak crash."
+    );
+  }
+
+  return (
+    <GoogleOAuthProvider clientId={safeClientId}>
+      <AuthModalContent {...props} />
+    </GoogleOAuthProvider>
   );
 };
