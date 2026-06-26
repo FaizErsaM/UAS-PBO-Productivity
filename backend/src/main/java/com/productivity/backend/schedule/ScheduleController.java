@@ -17,14 +17,12 @@ public class ScheduleController {
     @Autowired
     private ScheduleService service;
 
-    // Endpoint untuk membuat jadwal baru (POST http://localhost:8080/api/schedule)
     @PostMapping
     public ResponseEntity<ScheduleEvent> createEvent(@RequestBody ScheduleEvent event) {
         ScheduleEvent savedEvent = service.createEvent(event);
         return ResponseEntity.ok(savedEvent);
     }
 
-    // Endpoint untuk mengambil jadwal kalender (GET http://localhost:8080/api/schedule/user/{userId}?start=...&end=...)
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<ScheduleEvent>> getEvents(
             @PathVariable UUID userId,
@@ -35,7 +33,6 @@ public class ScheduleController {
         return ResponseEntity.ok(events);
     }
 
-    // Endpoint untuk memperbarui jadwal (PUT http://localhost:8080/api/schedule/{id})
     @PutMapping("/{id}")
     public ResponseEntity<ScheduleEvent> updateEvent(
             @PathVariable UUID id, 
@@ -43,7 +40,6 @@ public class ScheduleController {
         return ResponseEntity.ok(service.updateEvent(id, event));
     }
 
-    // Endpoint untuk menghapus jadwal (DELETE http://localhost:8080/api/schedule/{id})
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteEvent(@PathVariable UUID id) {
         service.deleteEvent(id);

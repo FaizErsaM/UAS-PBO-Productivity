@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Card } from './Card';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, CheckCircle2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { formatDeadline } from '../utils/dateUtils';
 
@@ -103,19 +103,36 @@ export const ScheduleView = () => {
                 </div>
                 
                 <div className="space-y-1.5 mt-1">
-                  {dayTasks.map(task => (
-                    <div 
-                      key={task.id} 
-                      className="text-[10px] sm:text-xs p-1.5 rounded-md bg-purple/10 border border-purple/20 text-purple font-medium truncate flex-col sm:flex-row items-start sm:items-center gap-1 shadow-sm leading-tight"
-                      title={task.title}
-                    >
-                      <div className="truncate">{task.title}</div>
-                      <div className="text-purple/80 flex items-center text-[9px] mt-0.5">
-                         <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
-                         {new Date(task.deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {dayTasks.map(task => {
+                    // Cek status selesai. Sesuaikan nama propertinya dengan milik Anda 
+                    // (misalnya: task.status === 'COMPLETED' atau task.completed)
+                    const isDone = task.completed;
+
+                    return (
+                      <div 
+                        key={task.id} 
+                        // Bagian ini membedakan warna kotak luar (Ungu vs Abu-abu samar)
+                        className={`text-[10px] sm:text-xs p-1.5 rounded-md border font-medium truncate flex-col sm:flex-row items-start sm:items-center gap-1 shadow-sm leading-tight ${
+                          isDone 
+                            ? "bg-gray-50 border-gray-200 text-gray-500 opacity-70" 
+                            : "bg-purple/10 border-purple/20 text-purple"
+                        }`}
+                        title={task.title}
+                      >
+                        {/* Bagian judul tugas: dicoret dan diberi ikon centang jika isDone true */}
+                        <div className={`truncate flex items-center gap-1 ${isDone ? "line-through text-gray-400" : ""}`}>
+                          {isDone && <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 inline-block" />}
+                          {task.title}
+                        </div>
+                        
+                        {/* Bagian ikon jam dan waktu: warnanya ikut berubah menyesuaikan status */}
+                        <div className={`flex items-center text-[9px] mt-0.5 ${isDone ? "text-gray-400" : "text-purple/80"}`}>
+                          <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
+                          {new Date(task.deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
