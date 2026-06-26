@@ -18,6 +18,9 @@ public class User {
 
     private String password;
 
+    @Column(name = "auth_provider")
+    private String authProvider = "local";
+
     public UUID getId() {
         return id;
     }
@@ -48,5 +51,13 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getAuthProvider() {
+        return authProvider;
+    }
+
+    public void setAuthProvider(String authProvider) {
+        this.authProvider = authProvider;
     }
 }
