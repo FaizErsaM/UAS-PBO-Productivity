@@ -116,6 +116,7 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword("");
         user.setAuthProvider("google");
+        user.setVerified(true);
 
         user = userRepository.save(user);
 
@@ -205,6 +206,49 @@ public class AuthService {
         return ResponseEntity.ok(response);
     }
 
+public ResponseEntity<?> resendRegisterOtp(
+        ResendRegisterOtpRequest request
+){
+
+    Optional<User> optionalUser =
+            userRepository.findByEmail(request.getEmail());
+
+    if(optionalUser.isEmpty()){
+
+        return ResponseEntity.badRequest()
+                .body(Map.of(
+                        "message",
+                        "User tidak ditemukan"
+                ));
+
+    }
+
+    User user = optionalUser.get();
+
+    String otp = otpService.generateOtp();
+
+    user.setOtp(otp);
+
+    user.setOtpExpired(
+            LocalDateTime.now().plusMinutes(5)
+    );
+
+    userRepository.save(user);
+
+    whatsAppService.sendOtp(
+            user.getPhoneNumber(),
+            otp
+    );
+
+    return ResponseEntity.ok(
+            Map.of(
+                    "message",
+                    "OTP berhasil dikirim ulang"
+            )
+    );
+
+}
+
     // ─────────────────────────────────────────────
     // LOGIN MANUAL
     // Perbaikan: cek authProvider agar akun Google tidak bisa login manual,
@@ -219,6 +263,24 @@ public class AuthService {
         }
 
         User user = userOptional.get();
+
+
+if (!Boolean.TRUE.equals(user.getVerified())) {
+    return ResponseEntity.badRequest().body(
+        Map.of(
+            "message",
+            "Akun belum diverifikasi. Silakan cek WhatsApp Anda."
+        )
+    );
+}
+
+if ("google".equals(user.getAuthProvider())) {
+    return ResponseEntity.badRequest()
+            .body(Map.of(
+                    "message",
+                    "Akun ini terdaftar via Google. Silakan login dengan Google."));
+}
+        
 
         // ✅ Tolak jika akun ini terdaftar via Google
         if ("google".equals(user.getAuthProvider())) {
@@ -345,18 +407,13 @@ public class AuthService {
                     .body(Map.of("message", "OTP salah"));
         }
 
-        if (!Boolean.TRUE.equals(resetOtp.getVerified())) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "OTP belum diverifikasi"));
-        }
-
         User user = userOptional.get();
 
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        userRepository.save(user);
+userRepository.save(user);
 
-        otpRepository.deleteByEmail(request.getEmail());
+otpRepository.deleteByEmail(request.getEmail());
 
         return ResponseEntity.ok(
                 Map.of("message", "Password berhasil diubah"));
