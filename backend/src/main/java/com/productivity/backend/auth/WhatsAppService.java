@@ -25,11 +25,14 @@ public class WhatsAppService {
         Map<String, Object> body = new HashMap<>();
         body.put("target", phoneNumber);
         body.put("message",
-                "🔐 Kode OTP HeyJipro\n\n"
-                        + "Kode OTP Anda adalah : "
-                        + otp
-                        + "\n\nKode berlaku selama 5 menit.\nJangan berikan kode ini kepada siapa pun.");
-
+        "🔐 *HeyJipro - Verifikasi Akun*\n\n"
+                + "Halo! 👋\n\n"
+                + "Kode OTP Anda adalah:\n"
+                + "*" + otp + "*\n\n"
+                + "⏳ Kode berlaku selama *5 menit*.\n\n"
+                + "⚠️ Demi keamanan, jangan bagikan kode ini kepada siapa pun, termasuk admin HeyJipro.\n"
+                + "Jika Anda tidak melakukan permintaan ini, abaikan pesan ini.\n\n"
+                + "Terima kasih telah menggunakan HeyJipro. 🚀");
         HttpEntity<Map<String, Object>> entity =
                 new HttpEntity<>(body, headers);
 
