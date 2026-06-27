@@ -1,9 +1,9 @@
 package com.productivity.backend.auth;
 
-public class GoogleLoginRequest {
+public class VerifyOtpRequest {
 
     private String email;
-    private String name;
+    private String otp;
 
     public String getEmail() {
         return email;
@@ -13,11 +13,12 @@ public class GoogleLoginRequest {
         this.email = email;
     }
 
-    public String getName() {
-        return name;
+    public String getOtp() {
+        return otp;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setOtp(String otp) {
+        this.otp = otp;
     }
+
 }

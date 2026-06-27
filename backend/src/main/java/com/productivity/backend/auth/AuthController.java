@@ -24,10 +24,16 @@ public class AuthController {
     public Object users() {
         return authService.getAllUsers();
     }
-    @PostMapping("/google")
-    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
-    return authService.googleLogin(request);
+    @PostMapping("/google/register")
+    public ResponseEntity<?> googleRegister(@RequestBody GoogleLoginRequest request) {
+        return authService.googleRegister(request);
     }
+
+    @PostMapping("/google/login")
+    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
+        return authService.googleLogin(request);
+    }
+    
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
@@ -39,8 +45,34 @@ public class AuthController {
         return authService.login(request);
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(
+            @RequestBody ForgotPasswordRequest request) {
+
+        return authService.forgotPassword(request);
+
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(
+            @RequestBody VerifyOtpRequest request
+    ) {
+
+        return authService.verifyOtp(request);
+
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @RequestBody ResetPasswordRequest request
+    ) {
+
+        return authService.resetPassword(request);
+
+    }
+
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
-        return ResponseEntity.ok(java.util.Map.of("message", "Logout berhasil"));
+    public ResponseEntity<String> logout() {
+        return ResponseEntity.ok("Logout berhasil");
     }
 }

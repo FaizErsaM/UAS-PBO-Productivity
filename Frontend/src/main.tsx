@@ -1,22 +1,18 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-import { AppProvider } from './context/AppContext';
-import { registerSW } from 'virtual:pwa-register';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import App from "./App";
+import "./index.css";
+import { AppProvider } from "./context/AppContext";
 
-registerSW({ immediate: true });
-
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
-  </StrictMode>,
-)
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <AppProvider>
-      <App />
-    </AppProvider>
-  </StrictMode>,
+    <GoogleOAuthProvider
+      clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+    >
+      <AppProvider>
+        <App />
+      </AppProvider>
+    </GoogleOAuthProvider>
+  </StrictMode>
 );

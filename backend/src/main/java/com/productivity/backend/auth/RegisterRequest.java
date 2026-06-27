@@ -4,6 +4,7 @@ public class RegisterRequest {
     private String name; // PERBAIKAN: Ditambahkan field name
     private String email;
     private String password;
+    private String phoneNumber;
 
     public String getName() {
         return name;
@@ -27,5 +28,13 @@ public class RegisterRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }
