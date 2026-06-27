@@ -2,8 +2,10 @@ package com.productivity.backend.habits;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,11 +24,14 @@ public class HabitAiService implements HabitAiProvider {
 
     @SuppressWarnings("unchecked")
     public String generateHabitSuggestion(String userGoal) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" + geminiApiKey;
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key="
+                + geminiApiKey;
 
-        String prompt = "Kamu adalah AI habit coach. Berikan SATU saran habit yang spesifik, terukur, dan realistis berdasarkan tujuan berikut: \"" + userGoal + "\"\n\n" +
+        String prompt = "Kamu adalah AI habit coach. Berikan SATU saran habit yang spesifik, terukur, dan realistis berdasarkan tujuan berikut: \""
+                + userGoal + "\"\n\n" +
                 "Aturan:\n" +
-                "- Gunakan bahasa yang SAMA dengan bahasa input pengguna (jika Indonesia maka Indonesia, jika Inggris maka Inggris)\n" +
+                "- Gunakan bahasa yang SAMA dengan bahasa input pengguna (jika Indonesia maka Indonesia, jika Inggris maka Inggris)\n"
+                +
                 "- Format: [frekuensi/waktu] + [aktivitas spesifik] + [durasi/jumlah]\n" +
                 "- Contoh bagus: 'Membaca buku non-fiksi 30 menit setiap malam sebelum tidur'\n" +
                 "- Contoh bagus: 'Exercise at the gym for 45 minutes every morning at 7 AM'\n" +
@@ -35,26 +40,29 @@ public class HabitAiService implements HabitAiProvider {
                 "- Jawab HANYA dengan nama habitnya saja dalam satu kalimat\n";
 
         Map<String, Object> requestBody = Map.of(
-            "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
-        );
+                "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {
+                    });
             Map<String, Object> body = response.getBody();
-
             if (body != null && body.containsKey("candidates")) {
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) body.get("candidates");
                 Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
                 List<Map<String, String>> parts = (List<Map<String, String>>) content.get("parts");
                 return parts.get(0).get("text").trim()
-                    .replaceAll("\\*\\*", "")
-                    .replaceAll("\\n", " ")
-                    .replaceAll("^[-•*]\\s*", "")
-                    .trim();
+                        .replaceAll("\\*\\*", "")
+                        .replaceAll("\\n", " ")
+                        .replaceAll("^[-•*]\\s*", "")
+                        .trim();
             }
         } catch (Exception e) {
             e.printStackTrace();
