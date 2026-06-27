@@ -77,6 +77,16 @@
                         <artifactId>spring-security-test</artifactId>
                         <scope>test</scope>
                 </dependency>
+                <dependency>
+                        <groupId>com.google.api-client</groupId>
+                        <artifactId>google-api-client</artifactId>
+                        <version>2.7.2</version>
+                </dependency>
+                <dependency>
+                        <groupId>com.google.oauth-client</groupId>
+                        <artifactId>google-oauth-client</artifactId>
+                        <version>1.37.0</version>
+                </dependency>
         </dependencies>
         <build>
                 <plugins>

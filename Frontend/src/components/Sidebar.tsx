@@ -1,6 +1,4 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -35,23 +33,6 @@ export const Sidebar = ({
     { id: 'habits', icon: Target, label: 'Habits' },
     { id: 'analytics', icon: BarChart2, label: 'Analytics' },
   ];
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  useEffect(() => {
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    });
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  };
 
   return (
     <aside className={`fixed left-0 top-0 h-screen w-64 bg-white text-navy border-r border-slate-200 dark:bg-navy dark:text-white dark:border-transparent flex flex-col pt-8 pb-6 px-4 z-40 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
@@ -108,18 +89,10 @@ export const Sidebar = ({
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
         </button>
-        {deferredPrompt && (
-          <button 
-            onClick={handleInstallClick}
-            className="flex items-center gap-3 w-full p-3 mt-4 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all font-medium shadow-md"
-          >
-            <Download className="w-5 h-5" />
-            <span>Install App</span>
-          </button>
-        )}
+        
         {/* User Profile Snippet */}
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/50 flex items-center gap-3 px-2">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-purple to-soft-blue p-[2px]">
+          <div className="w-11 h-11 rounded-full bg-linear-to-tr from-purple to-soft-blue p-[2px]">
             <img 
               src={profilePic} 
               alt="User Avatar"

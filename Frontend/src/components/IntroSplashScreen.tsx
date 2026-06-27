@@ -53,7 +53,7 @@ export const IntroSplashScreen = ({ onComplete }: { onComplete: () => void }) =>
            className="text-5xl font-bold tracking-widest flex items-center mb-4"
         >
           <span className="text-[#0B1221]">HEY</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple to-[#6366F1]">JIPRO</span>
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-purple to-[#6366F1]">JIPRO</span>
         </motion.div>
 
         {/* Tagline */}

@@ -44,6 +44,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     firstName,
     setFirstName,
     lastName,
+    getAuthHeadersForFormData,
     setLastName,
     occupation,
     setOccupation,
@@ -254,7 +255,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -265,30 +266,34 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       return;
     }
 
-    executeWithFeedback(async () => {
-      return new Promise<void>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === "string") {
-            setProfilePic(reader.result);
-            resolve();
-          } else {
-            reject(new Error("Gagal memuat gambar."));
-          }
-        };
-        reader.onerror = () => reject(new Error("Error membaca file."));
-        reader.readAsDataURL(file);
-      });
-    }, "Foto profil berhasil diunggah!");
-  };
+    // 1. Tampilkan preview lokal terlebih dahulu agar UX terasa instan
+    const localUrl = URL.createObjectURL(file);
+    setProfilePic(localUrl);
 
-  const handleGoogleImport = () => {
-    executeWithFeedback(async () => {
-      await new Promise((r) => setTimeout(r, 800));
-      setProfilePic(
-        "https://api.dicebear.com/7.x/avataaars/svg?seed=GoogleUser&style=circle&backgroundColor=transparent",
-      );
-    }, "Foto profil berhasil diimpor dari Google akun!");
+    // 2. Kirim file ke backend
+    await executeWithFeedback(async () => {
+      if (!user) throw new Error("User tidak terautentikasi.");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${API_BASE_URL}/profile-pic/${user.id}`, {
+        method: "POST",
+        headers: getAuthHeadersForFormData(), // Pastikan token jika menggunakan auth
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(
+          err.message || "Gagal mengunggah foto profil ke server",
+        );
+      }
+
+      const data = await response.json();
+      // 3. Set URL publik permanen yang dikembalikan oleh backend
+      setProfilePic(data.profilePic);
+    }, "Foto profil berhasil diperbarui!");
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -517,26 +522,12 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                 >
                   <Upload className="w-3 h-3" /> Upload Foto
                 </button>
-                <button
-                  onClick={handleGoogleImport}
-                  className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm font-medium text-slate-600 hover:text-navy hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <img
-                    src="https://www.google.com/favicon.ico"
-                    className="w-3.5 h-3.5"
-                    alt="Google"
-                  />{" "}
-                  Sync Google
-                </button>
               </div>
 
               <h3 className="text-xl font-bold text-navy">
                 {firstName} {lastName}
               </h3>
               <p className="text-slate-500 text-sm">{email}</p>
-              <div className="mt-4 px-4 py-1.5 bg-purple/10 text-purple text-xs font-semibold rounded-full">
-                Jipro Pro Premium Acc
-              </div>
 
               {/* Dynamic Mini Profile Grid preview */}
               <div className="w-full mt-6 border-t border-slate-100 pt-5">
@@ -1231,38 +1222,13 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                   </div>
                 </form>
               </Card>
-
-              {/* Login Sessions */}
-              <Card>
-                <h3 className="text-base font-bold text-navy border-b border-slate-100 pb-3 mb-4">
-                  Sesi Login Terkini
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
-                      <div>
-                        <p className="font-bold text-slate-800">
-                          Browser Aktif Saat Ini
-                        </p>
-                        <p className="text-slate-500 text-[10px]">
-                          Cloud Run Sandbox Ingress • Jakarta, ID
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                      Sesi Ini
-                    </span>
-                  </div>
-                </div>
-              </Card>
             </div>
           )}
 
           {/* Danger Zone */}
           <Card>
             <h3 className="text-lg font-bold text-rose-600 border-b border-rose-100 pb-4 mb-6">
-              Danger Zone (Keluar)
+              Log Out
             </h3>
             <p className="text-xs text-slate-600 mb-4 font-medium">
               Keluar dari akun akan menghapus sesi login aktif saat ini. Anda

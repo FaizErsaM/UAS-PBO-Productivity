@@ -55,17 +55,14 @@ export const AiChat = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_API_URL}/chat`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: userMsg,
-            context: { tasks, habits },
-          }),
-        },
-      );
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMsg,
+          context: { tasks, habits },
+        }),
+      });
 
       const data = await response.json();
 
@@ -116,10 +113,10 @@ export const AiChat = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 w-[350px] max-w-[calc(100vw-3rem)] md:w-[400px] h-[500px] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-neutral-light flex flex-col z-50 overflow-hidden"
+            className="fixed bottom-24 right-6 w-87.5 max-w-[calc(100vw-3rem)] md:w-100 h-125 max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-neutral-light flex flex-col z-50 overflow-hidden"
           >
             {/* Header */}
-            <div className="p-4 bg-gradient-to-r from-navy to-navy-light text-white flex justify-between items-center shrink-0">
+            <div className="p-4 bg-linear-to-r from-navy to-navy-light text-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/10">
                   <JiproLogoIcon className="w-5 h-5" colorClass="fill-white" />
@@ -151,7 +148,7 @@ export const AiChat = () => {
                   {msg.role === "ai" && (
                     <div className="w-7 h-7 rounded-full bg-purple/10 border border-purple/20 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                       <JiproLogoIcon
-                        className="w-[18px] h-[18px]"
+                        className="w-4.5 h-4.5"
                         colorClass="fill-purple"
                       />
                     </div>

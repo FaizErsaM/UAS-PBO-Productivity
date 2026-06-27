@@ -214,7 +214,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
             ))}
             <button
               onClick={() => setIsAuthModalOpen(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-full hover:shadow-lg hover:shadow-purple/30 transition-all cursor-pointer"
+              className="px-6 py-2.5 bg-linear-to-r from-purple to-soft-blue text-white text-sm font-bold rounded-full hover:shadow-lg hover:shadow-purple/30 transition-all cursor-pointer"
             >Log in</button>
           </div>
         </div>
@@ -237,13 +237,13 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
             <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.6 }}>
               <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 tracking-tight" style={{ color: lp.textPrimary }}>
                 Berhenti Menunda,{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple to-soft-blue">Mulai Produktif.</span>
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-purple to-soft-blue">Mulai Produktif.</span>
               </h1>
               <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed" style={{ color: lp.textSecondary }}>
                 HeyJipro membantu mahasiswa mengatur tugas, memprioritaskan deadline, dan membangun kebiasaan produktif agar tetap fokus pada hal yang penting.
               </p>
               <button onClick={() => setIsAuthModalOpen(true)}
-                className="px-8 py-4 bg-gradient-to-r from-purple to-soft-blue text-white font-semibold rounded-full hover:shadow-lg hover:shadow-purple/30 transition-all flex items-center gap-2 mx-auto lg:mx-0"
+                className="px-8 py-4 bg-linear-to-r from-purple to-soft-blue text-white font-semibold rounded-full hover:shadow-lg hover:shadow-purple/30 transition-all flex items-center gap-2 mx-auto lg:mx-0"
               >Mulai Gratis <ArrowRight className="w-5 h-5" /></button>
             </motion.div>
           </div>
@@ -300,7 +300,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
                 </div>
               </div>
             </motion.div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-purple/20 to-soft-blue/20 blur-3xl -z-10 rounded-full" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-linear-to-tr from-purple/20 to-soft-blue/20 blur-3xl -z-10 rounded-full" />
           </div>
         </div>
       </section>
@@ -474,7 +474,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
               <strong className="text-white">"Hey"</strong> adalah sapaan yang mengingatkanmu untuk kembali fokus.
             </motion.p>
             <motion.p initial={{ opacity:0,y:10 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }} transition={{ delay:0.4 }}>
-              <strong className="text-transparent bg-clip-text bg-gradient-to-r from-purple to-soft-blue">"Jipro"</strong> adalah <em>Journey to Productivity</em>, perjalanan menuju versi diri yang lebih produktif.
+              <strong className="text-transparent bg-clip-text bg-linear-to-r from-purple to-soft-blue">"Jipro"</strong> adalah <em>Journey to Productivity</em>, perjalanan menuju versi diri yang lebih produktif.
             </motion.p>
             <motion.p initial={{ opacity:0,y:10 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }} transition={{ delay:0.6 }}
               className="text-xl font-medium text-white italic pt-6" style={{ borderTop:'1px solid #334155' }}>
@@ -491,7 +491,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
           <motion.div animate={{ rotate:360 }} transition={{ duration:50, repeat:Infinity, ease:'linear' }}
             className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-gradient-to-br from-purple/5 to-soft-blue/10 rounded-full blur-3xl" />
           <motion.div animate={{ rotate:-360 }} transition={{ duration:40, repeat:Infinity, ease:'linear' }}
-            className="absolute -bottom-[20%] -right-[10%] w-[40%] h-[40%] bg-gradient-to-tr from-orange-500/5 to-pink-500/10 rounded-full blur-3xl" />
+            className="absolute -bottom-[20%] -right-[10%] w-[40%] h-[40%] bg-linear-to-tr from-orange-500/5 to-pink-500/10 rounded-full blur-3xl" />
         </div>
 
         <motion.div initial={{ opacity:0,y:40 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }} transition={{ duration:0.8 }}
@@ -515,7 +515,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
                 className="relative w-64 h-64 md:w-72 md:h-72 group mb-6 flex items-center justify-center"
               >
                 <div className={`absolute inset-2 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500 ${
-                  authorStyle==='instagram' ? 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple/80 opacity-60' : 'bg-gradient-to-tr from-purple/30 to-soft-blue/30'
+                  authorStyle==='instagram' ? 'bg-linear-to-tr from-yellow-400 via-pink-500 to-purple/80 opacity-60' : 'bg-linear-to-tr from-purple/30 to-soft-blue/30'
                 }`} />
                 <img src={getAuthorImage()} referrerPolicy="no-referrer" alt="Faizer"
                   className={`relative z-10 transition-all duration-500 group-hover:scale-105 ${
@@ -555,7 +555,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
             <div className="flex-1 flex flex-col gap-6 z-10 pt-8 md:pt-0 w-full">
               <motion.h3 initial={{ opacity:0,x:20 }} whileInView={{ opacity:1,x:0 }} viewport={{ once:true }} transition={{ delay:0.2 }}
                 className="text-4xl md:text-5xl font-black tracking-tight" style={{ color: lp.textPrimary }}>
-                HI I'M <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple to-soft-blue">Faiz Ersa M</span>
+                HI I'M <span className="text-transparent bg-clip-text bg-linear-to-r from-purple to-soft-blue">Faiz Ersa M</span>
               </motion.h3>
 
               {/* Carousel */}
@@ -603,7 +603,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
                 {/* Progress bar */}
                 <div className="mt-3 rounded-full h-1 overflow-hidden" style={{ backgroundColor: lp.dotInactive }}>
                   <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-purple to-soft-blue"
+                    className="h-full rounded-full bg-linear-to-r from-purple to-soft-blue"
                     animate={{ width: `${((currentSlide + 1) / creatorSlides.length) * 100}%` }}
                     transition={{ duration: 0.35 }}
                   />
@@ -642,7 +642,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
                 <motion.a href="https://www.instagram.com/fmsya_?igsh=M2J0NXMybzYzbGdy&utm_source=qr" target="_blank" rel="noopener noreferrer"
                   whileHover={{ scale:1.05, y:-3 }} whileTap={{ scale:0.95 }}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-300 hover:bg-gradient-to-tr hover:from-pink-500 hover:to-orange-400 hover:text-white cursor-pointer"
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-300 hover:bg-linear-to-tr hover:from-pink-500 hover:to-orange-400 hover:text-white cursor-pointer"
                   style={{ backgroundColor: lp.btnSocial, border:`1px solid ${lp.btnSocialBorder}`, color: lp.btnSocialText }}>
                   <Instagram className="w-5 h-5" /> Instagram
                 </motion.a>
@@ -743,7 +743,7 @@ const TestiCard = ({ name, role, feedback, lp, delay }: { name: string; role: st
     <div className="absolute top-6 right-8 text-4xl text-purple/20 font-serif">"</div>
     <p className="mb-6 relative z-10 italic" style={{ color: lp.textSecondary }}>"{feedback}"</p>
     <div className="flex items-center gap-4">
-      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple/30 to-soft-blue/30 flex items-center justify-center font-bold" style={{ color: lp.textPrimary }}>{name[0]}</div>
+      <div className="w-12 h-12 rounded-full bg-linear-to-tr from-purple/30 to-soft-blue/30 flex items-center justify-center font-bold" style={{ color: lp.textPrimary }}>{name[0]}</div>
       <div>
         <h4 className="font-bold" style={{ color: lp.textPrimary }}>{name}</h4>
         <p className="text-sm" style={{ color: lp.textSecondary }}>{role}</p>

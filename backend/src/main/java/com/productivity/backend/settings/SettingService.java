@@ -6,12 +6,24 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import ini untuk mengamankan Lazy Loading
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class SettingService {
 
     @Autowired
     private SettingRepository settingRepository;
+
+    @Value("${supabase.url}")
+    private String supabaseUrl;
+
+    @Value("${supabase.anon-key}")
+    private String supabaseKey;
 
     // Fungsi 1: Menyediakan data setting atau membuatnya jika belum ada
     // Fungsi 1: Menyediakan data setting atau membuatnya jika belum ada
@@ -54,6 +66,32 @@ public class SettingService {
         }
 
         return settingRepository.save(existingSetting);
+    }
+
+    public SettingModel updateProfilePic(UUID userId, MultipartFile file) throws Exception {
+        SettingModel setting = settingRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Setting tidak ditemukan"));
+
+        // Buat nama file unik
+        String fileName = userId + "_" + System.currentTimeMillis()
+                + "_" + file.getOriginalFilename();
+
+        String uploadUrl = supabaseUrl + "/storage/v1/object/profiles/" + fileName;
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + supabaseKey);
+        headers.setContentType(MediaType.parseMediaType(
+                file.getContentType() != null ? file.getContentType() : "image/jpeg"));
+
+        HttpEntity<byte[]> requestEntity = new HttpEntity<>(file.getBytes(), headers);
+        restTemplate.exchange(uploadUrl, HttpMethod.POST, requestEntity, String.class);
+
+        // Buat public URL
+        String publicUrl = supabaseUrl + "/storage/v1/object/public/profiles/" + fileName;
+
+        setting.setProfilePic(publicUrl);
+        return settingRepository.save(setting);
     }
 
     // Fungsi 3: Update notifikasi ke database

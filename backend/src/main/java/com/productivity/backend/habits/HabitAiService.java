@@ -24,7 +24,7 @@ public class HabitAiService implements HabitAiProvider {
 
     @SuppressWarnings("unchecked")
     public String generateHabitSuggestion(String userGoal) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key="
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key="
                 + geminiApiKey;
 
         String prompt = "Kamu adalah AI habit coach. Berikan SATU saran habit yang spesifik, terukur, dan realistis berdasarkan tujuan berikut: \""
