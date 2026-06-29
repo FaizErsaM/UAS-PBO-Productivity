@@ -10,120 +10,169 @@ import { Logo } from './Logo';
 import { AuthModal } from './AuthModal';
 import { PaperConfetti } from './PaperConfetti';
 import emptyAnimeStudyRoom from '../assets/images/empty_anime_study_room_1780219699619.png';
-import authorFaizerPng from '../assets/images/author_faizer_1780236861813.png';
-import authorFaizerTwibbon from '../assets/images/author_faizer_twibbon_1780237197243.png';
-import authorFaizerImg from '../assets/images/author_faizer_instagram_1780237554321.jpg';
 import { useAppContext } from '../context/AppContext';
 
+// ── Foto creator dari assets ──────────────────────────────────────────────
+import photoAbdulKarim from '../assets/images/karim.png';
+import photoAdamHalawi from '../assets/images/adam.png';
+import photoAdiKarunia from '../assets/images/adi_karunia.png';
+import photoAdiSatria from '../assets/images/adi_s.png';
+import photoAditya from '../assets/images/aditya.png';
+import photoAfdhal from '../assets/images/afdhal.png';
+import photoAhmadFadhilah from '../assets/images/ahmet.png';
+import photoAhmadRiyadh from '../assets/images/pawas.png';
+import photoAika from '../assets/images/aika.png';
+import photoAlden from '../assets/images/alden.png';
+import photoFahad from '../assets/images/fahad.png';
+import photoFaiz from '../assets/images/faiz.png';
+
 // ── 12 Creator Slides (semua sample nama Faiz) ─────────────────────────────
+// `instagram` & `linkedin` beda per orang — tombol sosial di bawah carousel
+// otomatis ikut berubah sesuai slide yang sedang ditampilkan.
 const creatorSlides = [
   {
     id: 1,
-    name: 'Faiz Ersa M.',
-    role: 'Founder & Full-Stack Dev',
+    name: 'ABDUL KARIM .',
+    NIM: ' 1247050017',
     emoji: '👨‍💻',
+    photo: photoAbdulKarim,
     quote: 'Saya bangun HeyJipro karena saya tahu betul rasanya kewalahan menghadapi tugas kuliah tanpa sistem yang rapi.',
     accent: '#8B5CF6',
     bg: 'lp-slide-purple',
+    instagram: 'https://www.instagram.com/fmsya_?igsh=M2J0NXMybzYzbGdy&utm_source=qr',
+    linkedin: 'https://www.linkedin.com/in/faiz-ersa-musyafa-6583b3361',
   },
   {
     id: 2,
-    name: 'Faiz Rahman',
-    role: 'UI/UX Designer',
+    name: 'ADAM HALAWI',
+    NIM: ' 1247050024',
     emoji: '🎨',
+    photo: photoAdamHalawi,
     quote: 'Saya percaya desain yang baik bukan hanya soal estetika — tapi bagaimana membuat pengguna merasa nyaman dan termotivasi.',
     accent: '#EC4899',
     bg: 'lp-slide-pink',
+    instagram: 'https://instagram.com/faiz.rahman', // contoh placeholder — ganti dengan URL IG asli
+    linkedin: 'https://linkedin.com/in/faiz.rahman', // contoh placeholder — ganti dengan URL LinkedIn asli
   },
   {
     id: 3,
-    name: 'Faiz Akhtar',
-    role: 'Backend Engineer',
+    name: 'ADI KARUNIA',
+    NIM: ' 12470500127',
     emoji: '⚙️',
+    photo: photoAdiKarunia,
     quote: 'Sistem yang kuat di balik layar adalah kunci agar pengalaman pengguna berjalan mulus tanpa hambatan.',
     accent: '#3B82F6',
     bg: 'lp-slide-blue',
+    instagram: 'https://instagram.com/faiz.akhtar',
+    linkedin: 'https://linkedin.com/in/faiz.akhtar',
   },
   {
     id: 4,
-    name: 'Faiz Naufal',
-    role: 'Product Manager',
+    name: 'ADI SATRIA PERMANA',
+    NIM: ' 1247050074',
     emoji: '🎯',
+    photo: photoAdiSatria,
     quote: 'Fitur terbaik adalah fitur yang menyelesaikan masalah nyata. Kami selalu mendengar pengguna sebelum membangun apapun.',
     accent: '#F59E0B',
     bg: 'lp-slide-amber',
+    instagram: 'https://instagram.com/faiz.naufal',
+    linkedin: 'https://linkedin.com/in/faiz.naufal',
   },
   {
     id: 5,
-    name: 'Faiz Hardiansyah',
-    role: 'Mobile Developer',
+    name: 'ADITYA RAHMAN SYACH',
+    NIM: ' 1247050069',
     emoji: '📱',
+    photo: photoAditya,
     quote: 'Produktivitas tidak harus terpaku di depan laptop. Kami memastikan HeyJipro berjalan sempurna di semua perangkat.',
     accent: '#10B981',
     bg: 'lp-slide-emerald',
+    instagram: 'https://instagram.com/faiz.hardiansyah',
+    linkedin: 'https://linkedin.com/in/faiz.hardiansyah',
   },
   {
     id: 6,
-    name: 'Faiz Rizky',
-    role: 'Data Analyst',
+    name: 'AFDHAL JIHADI',
+    NIM: ' 1247050111',
     emoji: '📊',
+    photo: photoAfdhal,
     quote: 'Data tidak bohong. Setiap keputusan fitur kami didasari oleh data pengguna agar dampaknya benar-benar terasa.',
     accent: '#6366F1',
     bg: 'lp-slide-indigo',
+    instagram: 'https://instagram.com/faiz.rizky',
+    linkedin: 'https://linkedin.com/in/faiz.rizky',
   },
   {
     id: 7,
-    name: 'Faiz Maulana',
-    role: 'DevOps Engineer',
+    name: 'AHMAD FADHILAH GUMANTARA',
+    NIM: ' 1247050047',
     emoji: '🚀',
+    photo: photoAhmadFadhilah,
     quote: 'Infrastruktur yang solid memastikan HeyJipro selalu online dan cepat, kapanpun kamu butuhkan.',
     accent: '#EF4444',
     bg: 'lp-slide-red',
+    instagram: 'https://instagram.com/faiz.maulana',
+    linkedin: 'https://linkedin.com/in/faiz.maulana',
   },
   {
     id: 8,
-    name: 'Faiz Putra',
-    role: 'Content Strategist',
+    name: 'AHMAD RIYADH FAWWAZ',
+    NIM: ' 1247050106',
     emoji: '✍️',
+    photo: photoAhmadRiyadh,
     quote: 'Komunikasi yang jelas dan empati adalah fondasi agar setiap pengguna merasa HeyJipro benar-benar dibuat untuk mereka.',
     accent: '#F97316',
     bg: 'lp-slide-orange',
+    instagram: 'https://instagram.com/faiz.putra',
+    linkedin: 'https://linkedin.com/in/faiz.putra',
   },
   {
     id: 9,
-    name: 'Faiz Zulkarnain',
-    role: 'Security Researcher',
+    name: 'AIKA RIENASARI',
+    NIM: ' 1247050085',
     emoji: '🔐',
+    photo: photoAika,
     quote: 'Data kamu adalah milik kamu. Privasi dan keamanan bukan fitur tambahan — itu adalah hak dasar pengguna.',
     accent: '#64748B',
     bg: 'lp-slide-slate',
+    instagram: 'https://instagram.com/faiz.zulkarnain',
+    linkedin: 'https://linkedin.com/in/faiz.zulkarnain',
   },
   {
     id: 10,
-    name: 'Faiz Aditya',
-    role: 'QA Engineer',
+    name: 'ALDEN SHALIH FALAH',
+    NIM: ' 1247050050',
     emoji: '🧪',
+    photo: photoAlden,
     quote: 'Satu bug yang lolos bisa merusak kepercayaan. Saya memastikan setiap fitur teruji tuntas sebelum sampai ke tanganmu.',
     accent: '#14B8A6',
     bg: 'lp-slide-teal',
+    instagram: 'https://instagram.com/faiz.aditya',
+    linkedin: 'https://linkedin.com/in/faiz.aditya',
   },
   {
     id: 11,
-    name: 'Faiz Hidayat',
-    role: 'Growth Hacker',
+    name: 'FAHAD MUHAMMAD ALFARIZ',
+    NIM: ' 1247050135',
     emoji: '📈',
+    photo: photoFahad,
     quote: 'Pertumbuhan yang bermakna datang dari komunitas yang puas. Setiap pengguna baru adalah tanda kepercayaan yang kami jaga.',
     accent: '#8B5CF6',
     bg: 'lp-slide-violet',
+    instagram: 'https://instagram.com/faiz.hidayat',
+    linkedin: 'https://linkedin.com/in/faiz.hidayat',
   },
   {
     id: 12,
-    name: 'Faiz Ramadhan',
-    role: 'Community Manager',
+    name: 'FAIZ ERSA MUSYAFA',
+    NIM: ' 1247050091',
     emoji: '🤝',
+    photo: photoFaiz,
     quote: 'HeyJipro adalah rumah bagi semua orang yang percaya bahwa disiplin diri adalah bentuk cinta pada masa depan sendiri.',
     accent: '#EC4899',
     bg: 'lp-slide-fuchsia',
+    instagram: 'https://instagram.com/faiz.ramadhan',
+    linkedin: 'https://linkedin.com/in/faiz.ramadhan',
   },
 ];
 
@@ -135,14 +184,6 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
   const { executeWithFeedback, theme } = useAppContext();
   const isDark = theme === 'dark';
 
-  const getAuthorImage = () => {
-    switch (authorStyle) {
-      case 'png': return authorFaizerPng;
-      case 'twibbon': return authorFaizerTwibbon;
-      case 'instagram': return authorFaizerImg;
-      default: return authorFaizerPng;
-    }
-  };
 
   const prevSlide = () => {
     setSlideDir(-1);
@@ -497,7 +538,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
         <motion.div initial={{ opacity:0,y:40 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }} transition={{ duration:0.8 }}
           className="max-w-6xl mx-auto px-6 relative z-10 w-full">
           <div
-            className="rounded-[3rem] p-8 md:p-16 flex flex-col md:flex-row items-center gap-12 relative overflow-hidden transition-colors duration-300"
+            className="rounded-[3rem] p-8 md:p-16 flex flex-col md:flex-row items-center gap-8 md:gap-16 relative overflow-hidden transition-colors duration-300"
             style={{ background: isDark ? 'linear-gradient(135deg, #1E293B, #0F172A)' : 'linear-gradient(135deg, #F8FAFC, #F9FAFB)', border:`1px solid ${lp.cardBorder}` }}
           >
             {/* Meet The Creator badge */}
@@ -507,55 +548,116 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
               Meet The Creator
             </div>
 
-            {/* ── Author Photo Side ────────────────────────────────── */}
-            <div className="flex-1 flex flex-col items-center justify-center relative mt-16 md:mt-0">
+            {/* ── Author Photo Side — floating Instagram 4:5 ── */}
+            <div className="flex-1 flex flex-col items-center justify-center relative" style={{ minHeight: '420px' }}>
+
+              {/* Dekorasi lingkaran blur mengambang di belakang */}
               <motion.div
-                animate={{ y:[-10,10,-10], rotate:[-2,2,-2] }}
-                transition={{ duration:6, repeat:Infinity, ease:'easeInOut' }}
-                className="relative w-64 h-64 md:w-72 md:h-72 group mb-6 flex items-center justify-center"
+                animate={{ scale:[1,1.12,1], opacity:[0.3,0.55,0.3] }}
+                transition={{ duration:5, repeat:Infinity, ease:'easeInOut' }}
+                className="absolute w-56 h-56 rounded-full blur-3xl pointer-events-none"
+                style={{ background: `radial-gradient(circle, ${creatorSlides[currentSlide].accent}88, transparent 70%)`, top:'10%', left:'50%', transform:'translateX(-50%)' }}
+              />
+              <motion.div
+                animate={{ scale:[1.1,1,1.1], opacity:[0.2,0.4,0.2] }}
+                transition={{ duration:7, repeat:Infinity, ease:'easeInOut', delay:1.5 }}
+                className="absolute w-32 h-32 rounded-full blur-2xl pointer-events-none"
+                style={{ background:`radial-gradient(circle, #6366F188, transparent 70%)`, bottom:'5%', right:'10%' }}
+              />
+
+              {/* Kartu foto mengambang */}
+              <motion.div
+                key={creatorSlides[currentSlide].id}
+                initial={{ opacity:0, y:24, scale:0.93 }}
+                animate={{
+                  opacity:1, scale:1,
+                  y:[0, -14, 0],
+                  rotate:[-1.5, 1.5, -1.5],
+                }}
+                transition={{
+                  opacity:{ duration:0.4 },
+                  scale:{ duration:0.4 },
+                  y:{ duration:5.5, repeat:Infinity, ease:'easeInOut' },
+                  rotate:{ duration:5.5, repeat:Infinity, ease:'easeInOut' },
+                }}
+                className="relative group z-10"
+                style={{ width:'220px', aspectRatio:'4/5' }}
               >
-                <div className={`absolute inset-2 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500 ${
-                  authorStyle==='instagram' ? 'bg-linear-to-tr from-yellow-400 via-pink-500 to-purple/80 opacity-60' : 'bg-linear-to-tr from-purple/30 to-soft-blue/30'
-                }`} />
-                <img src={getAuthorImage()} referrerPolicy="no-referrer" alt="Faizer"
-                  className={`relative z-10 transition-all duration-500 group-hover:scale-105 ${
-                    authorStyle==='instagram' ? 'w-full h-full object-cover rounded-3xl border-4 border-white shadow-2xl' : 'w-full h-full object-contain'
-                  }`}
-                  style={{ filter: authorStyle==='instagram' ? 'none'
-                    : 'drop-shadow(4px 0px 0px #fff) drop-shadow(-4px 0px 0px #fff) drop-shadow(0px 4px 0px #fff) drop-shadow(0px -4px 0px #fff) drop-shadow(0px 15px 25px rgba(168,85,247,0.3))' }}
+                {/* Glow border beranimasi */}
+                <motion.div
+                  animate={{ opacity:[0.5,0.9,0.5] }}
+                  transition={{ duration:3, repeat:Infinity, ease:'easeInOut' }}
+                  className="absolute -inset-[3px] rounded-[18px] blur-sm"
+                  style={{ background:`linear-gradient(135deg, ${creatorSlides[currentSlide].accent}, #818CF8, ${creatorSlides[currentSlide].accent})` }}
                 />
-                <motion.div animate={{ rotate:[-5,5,-5], scale:[1,1.05,1] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }}
-                  className="absolute -top-4 -right-4 md:-right-8 px-5 py-3 rounded-2xl italic font-bold text-sm text-purple rotate-12 z-20 cursor-default hover:scale-110 transition-transform"
-                  style={{ backgroundColor: lp.tagBg, border:`1px solid ${lp.tagBorder}`, boxShadow:'0 8px 30px rgba(0,0,0,0.12)' }}>
+
+                {/* Frame foto */}
+                <div className="relative z-10 w-full h-full rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+                  <img
+                    src={creatorSlides[currentSlide].photo}
+                    referrerPolicy="no-referrer"
+                    alt={creatorSlides[currentSlide].name}
+                    className="w-full h-full transition-transform duration-700 group-hover:scale-[1.04]"
+                    style={{ objectFit:'contain', objectPosition:'center', backgroundColor:'#080810' }}
+                  />
+                  {/* Shimmer overlay on hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{ background:'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)' }} />
+                </div>
+
+                {/* Badge "Let's Build!" — kanan atas, mengambang */}
+                <motion.div
+                  animate={{ rotate:[-5,5,-5], y:[-3,3,-3], scale:[1,1.06,1] }}
+                  transition={{ duration:3.5, repeat:Infinity, ease:'easeInOut' }}
+                  className="absolute -top-5 -right-5 px-3 py-1.5 rounded-xl italic font-bold text-xs text-purple z-20 rotate-12 shadow-lg"
+                  style={{ backgroundColor: lp.tagBg, border:`1px solid ${lp.tagBorder}`, backdropFilter:'blur(8px)' }}
+                >
                   "Let's Build! 🚀"
                 </motion.div>
-                <motion.div animate={{ y:[0,-10,0] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut', delay:1 }}
-                  className="absolute -bottom-2 -left-2 bg-navy text-white px-4 py-2 rounded-xl shadow-lg font-medium text-xs -rotate-6 z-20 flex items-center gap-2 cursor-default">
-                  <motion.span animate={{ opacity:[1,0,1] }} transition={{ duration:1.5, repeat:Infinity }}>☕</motion.span>
+
+                {/* Badge "Powered by Coffee" — kiri bawah, mengambang */}
+                <motion.div
+                  animate={{ y:[0,-10,0], rotate:[-6,-4,-6] }}
+                  transition={{ duration:4, repeat:Infinity, ease:'easeInOut', delay:0.8 }}
+                  className="absolute -bottom-5 -left-5 bg-navy text-white px-3 py-1.5 rounded-xl shadow-lg font-medium text-[10px] z-20 flex items-center gap-1.5"
+                  style={{ border:'1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <motion.span animate={{ opacity:[1,0.3,1] }} transition={{ duration:1.5, repeat:Infinity }}>☕</motion.span>
                   Powered by Coffee
                 </motion.div>
+
+                {/* Dot dekorasi sudut kiri atas */}
+                <motion.div
+                  animate={{ scale:[1,1.5,1], opacity:[0.6,1,0.6] }}
+                  transition={{ duration:2.5, repeat:Infinity, ease:'easeInOut', delay:0.4 }}
+                  className="absolute -top-2 -left-2 w-3 h-3 rounded-full z-20"
+                  style={{ backgroundColor: creatorSlides[currentSlide].accent }}
+                />
+                {/* Dot dekorasi sudut kanan bawah */}
+                <motion.div
+                  animate={{ scale:[1.5,1,1.5], opacity:[1,0.5,1] }}
+                  transition={{ duration:2.5, repeat:Infinity, ease:'easeInOut', delay:1.2 }}
+                  className="absolute -bottom-2 -right-2 w-2 h-2 rounded-full z-20"
+                  style={{ backgroundColor:'#818CF8' }}
+                />
               </motion.div>
 
-              {/* Style Switcher */}
-              <div className="px-2.5 py-1.5 flex gap-1 z-20 rounded-2xl mb-4 transition-colors duration-300"
-                style={{ backgroundColor: isDark ? '#1E293B' : 'rgba(255,255,255,0.95)', border:`1px solid ${lp.cardBorder}` }}>
-                {(['png','twibbon','instagram'] as const).map(s => (
-                  <button key={s} type="button" onClick={() => setAuthorStyle(s)} className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                    style={ authorStyle===s
-                      ? { backgroundColor:'#8B5CF6', color:'#fff' }
-                      : { backgroundColor:'transparent', color: lp.textSecondary }
-                    }>
-                    {s==='png'?'✨ Sticker': s==='twibbon'?'🎓 Twibbon':'📷 Instagram'}
-                  </button>
-                ))}
+              {/* Counter slide kecil di bawah foto */}
+              <div className="mt-8 flex items-center gap-2 z-10">
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: creatorSlides[currentSlide].accent }} />
+                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: lp.textMuted }}>
+                  {currentSlide + 1} / {creatorSlides.length}
+                </span>
               </div>
             </div>
 
             {/* ── Creator Carousel Side ─────────────────────────── */}
             <div className="flex-1 flex flex-col gap-6 z-10 pt-8 md:pt-0 w-full">
-              <motion.h3 initial={{ opacity:0,x:20 }} whileInView={{ opacity:1,x:0 }} viewport={{ once:true }} transition={{ delay:0.2 }}
+              <motion.h3 key={`name-${creatorSlides[currentSlide].id}`} initial={{ opacity:0,x:20 }} animate={{ opacity:1,x:0 }} transition={{ duration:0.3 }}
                 className="text-4xl md:text-5xl font-black tracking-tight" style={{ color: lp.textPrimary }}>
-                HI I'M <span className="text-transparent bg-clip-text bg-linear-to-r from-purple to-soft-blue">Faiz Ersa M</span>
+                HI I'M <span className="text-transparent bg-clip-text bg-linear-to-r from-purple to-soft-blue">
+                  {creatorSlides[currentSlide].name.split(' ').slice(0, -1).join(' ')}
+                </span>
               </motion.h3>
 
               {/* Carousel */}
@@ -587,7 +689,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
                           {creatorSlides[currentSlide].name}
                         </p>
                         <p className="text-xs" style={{ color: creatorSlides[currentSlide].accent }}>
-                          {creatorSlides[currentSlide].role}
+                          {creatorSlides[currentSlide].NIM}
                         </p>
                       </div>
                       <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: lp.cardBg, color: lp.textMuted }}>
@@ -638,15 +740,15 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
                 </button>
               </div>
 
-              {/* Social buttons */}
+              {/* Social buttons — ikut berubah sesuai slide yang aktif */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
-                <motion.a href="https://www.instagram.com/fmsya_?igsh=M2J0NXMybzYzbGdy&utm_source=qr" target="_blank" rel="noopener noreferrer"
+                <motion.a key={`ig-${creatorSlides[currentSlide].id}`} href={creatorSlides[currentSlide].instagram} target="_blank" rel="noopener noreferrer"
                   whileHover={{ scale:1.05, y:-3 }} whileTap={{ scale:0.95 }}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-300 hover:bg-linear-to-tr hover:from-pink-500 hover:to-orange-400 hover:text-white cursor-pointer"
                   style={{ backgroundColor: lp.btnSocial, border:`1px solid ${lp.btnSocialBorder}`, color: lp.btnSocialText }}>
                   <Instagram className="w-5 h-5" /> Instagram
                 </motion.a>
-                <motion.a href="https://www.linkedin.com/in/faiz-ersa-musyafa-6583b3361" target="_blank" rel="noopener noreferrer"
+                <motion.a key={`li-${creatorSlides[currentSlide].id}`} href={creatorSlides[currentSlide].linkedin} target="_blank" rel="noopener noreferrer"
                   whileHover={{ scale:1.05, y:-3 }} whileTap={{ scale:0.95 }}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-300 hover:bg-blue-600 hover:text-white cursor-pointer"
                   style={{ backgroundColor: lp.btnSocial, border:`1px solid ${lp.btnSocialBorder}`, color: lp.btnSocialText }}>
@@ -665,7 +767,7 @@ export const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
           <p className="text-white/80 mb-10 text-xl">Berhenti membiarkan waktu terbuang. Saatnya mencapai potensi terbaikmu.</p>
           <motion.button whileHover={{ scale:1.05 }} whileTap={{ scale:0.95 }} onClick={() => setIsAuthModalOpen(true)}
             className="px-10 py-5 bg-white font-bold rounded-full hover:shadow-2xl transition-all shadow-xl text-lg cursor-pointer"
-            style={{ color:'#0F172A' }}>
+            style={{ color:'#ffffff' }}>
             Mulai Perjalanan Produktivitasmu
           </motion.button>
         </motion.div>
