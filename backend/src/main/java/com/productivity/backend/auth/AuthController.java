@@ -24,7 +24,6 @@ public class AuthController {
     public Object users() {
         return authService.getAllUsers();
     }
-
     @PostMapping("/google/register")
     public ResponseEntity<?> googleRegister(@RequestBody GoogleLoginRequest request) {
         return authService.googleRegister(request);
@@ -34,11 +33,26 @@ public class AuthController {
     public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
         return authService.googleLogin(request);
     }
+    
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         return authService.register(request);
     }
+
+    @PostMapping("/verify-register-otp")
+public ResponseEntity<?> verifyRegisterOtp(
+        @RequestBody VerifyRegisterOtpRequest request
+) {
+    return authService.verifyRegisterOtp(request);
+}
+
+@PostMapping("/resend-register-otp")
+public ResponseEntity<?> resendRegisterOtp(
+        @RequestBody ResendRegisterOtpRequest request
+){
+    return authService.resendRegisterOtp(request);
+}
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -55,21 +69,17 @@ public class AuthController {
 
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(
-            @RequestBody VerifyOtpRequest request) {
+            @RequestBody VerifyOtpRequest request
+    ) {
 
         return authService.verifyOtp(request);
 
     }
 
-    @PostMapping("/verify-register-otp")
-    public ResponseEntity<?> verifyRegisterOtp(
-            @RequestBody VerifyRegisterOtpRequest request) {
-        return authService.verifyRegisterOtp(request);
-    }
-
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(
-            @RequestBody ResetPasswordRequest request) {
+            @RequestBody ResetPasswordRequest request
+    ) {
 
         return authService.resetPassword(request);
 
