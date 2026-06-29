@@ -1,0 +1,21 @@
+# Folder build lokal
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Upload files lokal (jangan ikut ke image)
+uploads/
+
+# ENV lokal (nanti di-inject via docker run)
+.env

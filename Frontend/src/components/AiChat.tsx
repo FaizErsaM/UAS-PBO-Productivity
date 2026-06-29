@@ -55,16 +55,20 @@ export const AiChat = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMsg,
-          context: { tasks, habits },
-        }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_API_URL}/chat`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: userMsg,
+            context: { tasks, habits },
+          }),
+        },
+      );
 
       const data = await response.json();
+      console.log("Data dari BAckend", data);
 
       if (response.ok) {
         setMessages((prev) => [...prev, { role: "ai", content: data.text }]);
