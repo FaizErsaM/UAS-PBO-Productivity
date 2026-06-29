@@ -56,7 +56,7 @@ public class SecurityConfig {
                 // Tambahkan konfigurasi headers di bawah ini
                 .headers(headers -> headers
                         .crossOriginOpenerPolicy(coop -> coop.policy(
-                                org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy.SAME_ORIGIN_ALLOW_POPUPS)));
+                                org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy.UNSAFE_NONE)));
 
         return http.build();
     }
