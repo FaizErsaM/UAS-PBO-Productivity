@@ -3,7 +3,9 @@ package com.productivity.backend.settings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import com.productivity.backend.user.User;
 import com.productivity.backend.user.UserRepository;
 
@@ -14,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/settings")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class SettingController {
 
     @Autowired
@@ -58,6 +60,19 @@ public class SettingController {
 
         SettingModel updated = settingService.updateGridItem(userId, itemId, dataBaru);
         return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping(value = "/profile-pic/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateProfilePic(
+            @PathVariable("userId") UUID userId,
+            @RequestPart("file") MultipartFile file) {
+        try {
+            SettingModel updated = settingService.updateProfilePic(userId, file);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", e.getMessage()));
+        }
     }
 
     // Endpoint untuk Menghapus Item Grid Spesifik

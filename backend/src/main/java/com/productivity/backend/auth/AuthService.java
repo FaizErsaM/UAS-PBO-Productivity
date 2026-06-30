@@ -16,7 +16,16 @@ import com.productivity.backend.settings.SettingRepository;
 import com.productivity.backend.user.User;
 import com.productivity.backend.user.UserRepository;
 
+import java.time.LocalDateTime;
+import jakarta.transaction.Transactional;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+
 @Service
+@Transactional
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -24,13 +33,33 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder;
 
+    private final EmailService emailService;
+    private final OtpService otpService;
+    private final PasswordResetOtpRepository otpRepository;
+
+    private final WhatsAppService whatsAppService;
+
     // Dependency Injection via Constructor
-    public AuthService(UserRepository userRepository, SettingRepository settingRepository,
-                       JwtUtil jwtUtil, BCryptPasswordEncoder passwordEncoder) {
+    public AuthService(
+            UserRepository userRepository,
+            SettingRepository settingRepository,
+            JwtUtil jwtUtil,
+            BCryptPasswordEncoder passwordEncoder,
+            EmailService emailService,
+            OtpService otpService,
+            PasswordResetOtpRepository otpRepository,
+            WhatsAppService whatsAppService) {
+
         this.userRepository = userRepository;
         this.settingRepository = settingRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+
+        this.emailService = emailService;
+        this.otpService = otpService;
+        this.otpRepository = otpRepository;
+
+        this.whatsAppService = whatsAppService;
     }
 
     // ─────────────────────────────────────────────
@@ -44,40 +73,77 @@ public class AuthService {
         User user;
 
         if (userOptional.isPresent()) {
-            user = userOptional.get();
-        } else {
-            // User baru via Google → simpan dengan authProvider "google"
-            user = new User();
-            user.setUsername(request.getName());
-            user.setEmail(request.getEmail());
-            user.setPassword("");                  // Google user tidak punya password
-            user.setAuthProvider("google");
-            user = userRepository.save(user);
 
-            // Buat setting default (sama persis seperti register manual)
-            SettingModel setting = new SettingModel();
-            setting.setUserId(user.getId());
-            setting.setFirstName(request.getName());
-            setting.setEmail(user.getEmail());
-            setting.setPushEnabled(true);
-            setting.setSoundEnabled(true);
-            setting.setEmailDigestEnabled(false);
-            setting.setEmailFrequency("weekly");
-            setting.setProfileGridItems(buildDefaultGridItems());
-            settingRepository.save(setting);
+            user = userOptional.get();
+
+        } else {
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "message",
+                            "Akun Google belum terdaftar. Silakan daftar terlebih dahulu."));
         }
 
-        // Generate JWT dan return response yang konsisten
         String token = jwtUtil.generateToken(user.getEmail());
 
         Map<String, Object> response = new HashMap<>();
+
         response.put("message", "Login Google berhasil");
+        response.put("token", token);
+
+        Map<String, String> userData = new HashMap<>();
+
+        userData.put("id", user.getId().toString());
+        userData.put("username", user.getUsername());
+        userData.put("email", user.getEmail());
+
+        response.put("user", userData);
+
+        return ResponseEntity.ok(response);
+    }
+
+    public ResponseEntity<?> googleRegister(GoogleLoginRequest request) {
+
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+
+        if (existingUser.isPresent()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Email sudah terdaftar. Silakan login."));
+        }
+
+        User user = new User();
+        user.setUsername(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword("");
+        user.setAuthProvider("google");
+        user.setVerified(true);
+
+        user = userRepository.save(user);
+
+        SettingModel setting = new SettingModel();
+        setting.setUserId(user.getId());
+        setting.setFirstName(request.getName());
+        setting.setEmail(user.getEmail());
+        setting.setPushEnabled(true);
+        setting.setSoundEnabled(true);
+        setting.setEmailDigestEnabled(false);
+        setting.setEmailFrequency("weekly");
+        setting.setProfileGridItems(buildDefaultGridItems());
+
+        settingRepository.save(setting);
+
+        String token = jwtUtil.generateToken(user.getEmail());
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("message", "Register Google berhasil");
         response.put("token", token);
 
         Map<String, String> userData = new HashMap<>();
         userData.put("id", user.getId().toString());
         userData.put("username", user.getUsername());
         userData.put("email", user.getEmail());
+
         response.put("user", userData);
 
         return ResponseEntity.ok(response);
@@ -92,7 +158,7 @@ public class AuthService {
         // 1. Validasi jika email sudah digunakan
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
         if (existingUser.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email sudah digunakan"));
+            return ResponseEntity.badRequest().body("Email sudah digunakan");
         }
 
         // 2. Simpan data ke tabel 'users'
@@ -100,8 +166,25 @@ public class AuthService {
         user.setUsername(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword())); // ✅ hash password
-        user.setAuthProvider("local");                                    // ✅ tandai sebagai akun lokal
+
+        user.setAuthProvider("local"); // ✅ tandai sebagai akun lokal
+        user.setPhoneNumber(request.getPhoneNumber());
+
+        String otp = otpService.generateOtp();
+
+        user.setOtp(otp);
+        user.setOtpExpired(LocalDateTime.now().plusMinutes(5));
+        user.setVerified(false);
         User savedUser = userRepository.save(user);
+
+        // Kirim OTP via WhatsApp (tidak crash walau Fonnte timeout)
+        try {
+            whatsAppService.sendOtp(request.getPhoneNumber(), otp);
+            System.out.println("OTP berhasil dikirim ke " + request.getPhoneNumber());
+        } catch (Exception e) {
+            System.err.println("Gagal kirim OTP WhatsApp: " + e.getMessage());
+            // Lanjut tetap, OTP sudah tersimpan di DB
+        }
 
         System.out.println("USER TERSIMPAN = " + savedUser.getEmail());
 
@@ -117,13 +200,59 @@ public class AuthService {
         setting.setProfileGridItems(buildDefaultGridItems());
         settingRepository.save(setting);
 
-        return ResponseEntity.ok("Register berhasil");
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Register berhasil");
+
+        return ResponseEntity.ok(response);
     }
+
+public ResponseEntity<?> resendRegisterOtp(
+        ResendRegisterOtpRequest request
+){
+
+    Optional<User> optionalUser =
+            userRepository.findByEmail(request.getEmail());
+
+    if(optionalUser.isEmpty()){
+
+        return ResponseEntity.badRequest()
+                .body(Map.of(
+                        "message",
+                        "User tidak ditemukan"
+                ));
+
+    }
+
+    User user = optionalUser.get();
+
+    String otp = otpService.generateOtp();
+
+    user.setOtp(otp);
+
+    user.setOtpExpired(
+            LocalDateTime.now().plusMinutes(5)
+    );
+
+    userRepository.save(user);
+
+    whatsAppService.sendOtp(
+            user.getPhoneNumber(),
+            otp
+    );
+
+    return ResponseEntity.ok(
+            Map.of(
+                    "message",
+                    "OTP berhasil dikirim ulang"
+            )
+    );
+
+}
 
     // ─────────────────────────────────────────────
     // LOGIN MANUAL
     // Perbaikan: cek authProvider agar akun Google tidak bisa login manual,
-    //            password dibandingkan dengan BCrypt (bukan plain text)
+    // password dibandingkan dengan BCrypt (bukan plain text)
     // Semua logika lain (JWT, response format) tidak diubah
     // ─────────────────────────────────────────────
     public ResponseEntity<?> login(LoginRequest request) {
@@ -134,6 +263,24 @@ public class AuthService {
         }
 
         User user = userOptional.get();
+
+
+if (!Boolean.TRUE.equals(user.getVerified())) {
+    return ResponseEntity.badRequest().body(
+        Map.of(
+            "message",
+            "Akun belum diverifikasi. Silakan cek WhatsApp Anda."
+        )
+    );
+}
+
+if ("google".equals(user.getAuthProvider())) {
+    return ResponseEntity.badRequest()
+            .body(Map.of(
+                    "message",
+                    "Akun ini terdaftar via Google. Silakan login dengan Google."));
+}
+        
 
         // ✅ Tolak jika akun ini terdaftar via Google
         if ("google".equals(user.getAuthProvider())) {
@@ -166,6 +313,110 @@ public class AuthService {
 
     public Object getAllUsers() {
         return userRepository.findAll();
+    }
+
+    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest request) {
+
+        try {
+
+            Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Email tidak ditemukan"));
+            }
+
+            otpRepository.deleteByEmail(request.getEmail());
+
+            String otp = otpService.generateOtp();
+
+            PasswordResetOtp resetOtp = new PasswordResetOtp();
+
+            resetOtp.setEmail(request.getEmail());
+            resetOtp.setOtp(otp);
+            resetOtp.setVerified(false);
+            resetOtp.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+
+            otpRepository.save(resetOtp);
+
+            emailService.sendOtp(request.getEmail(), otp);
+
+            return ResponseEntity.ok(
+                    Map.of("message", "OTP berhasil dikirim"));
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return ResponseEntity.internalServerError()
+                    .body(Map.of(
+                            "message", e.getMessage()));
+        }
+
+    }
+
+    public ResponseEntity<?> verifyOtp(VerifyOtpRequest request) {
+
+        Optional<PasswordResetOtp> otpOptional = otpRepository.findTopByEmailOrderByCreatedAtDesc(request.getEmail());
+
+        if (otpOptional.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "OTP tidak ditemukan"));
+        }
+
+        PasswordResetOtp resetOtp = otpOptional.get();
+
+        if (!resetOtp.getOtp().equals(request.getOtp())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "OTP salah"));
+        }
+
+        if (resetOtp.getExpiredAt().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "OTP sudah kadaluarsa"));
+        }
+
+        resetOtp.setVerified(true);
+
+        otpRepository.save(resetOtp);
+
+        return ResponseEntity.ok(
+                Map.of("message", "OTP valid"));
+    }
+
+    public ResponseEntity<?> resetPassword(ResetPasswordRequest request) {
+
+        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "User tidak ditemukan"));
+        }
+
+        Optional<PasswordResetOtp> otpOptional = otpRepository.findTopByEmailOrderByCreatedAtDesc(request.getEmail());
+
+        if (otpOptional.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "OTP tidak ditemukan"));
+        }
+
+        PasswordResetOtp resetOtp = otpOptional.get();
+
+        if (!resetOtp.getOtp().equals(request.getOtp())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "OTP salah"));
+        }
+
+        User user = userOptional.get();
+
+user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+userRepository.save(user);
+
+otpRepository.deleteByEmail(request.getEmail());
+
+        return ResponseEntity.ok(
+                Map.of("message", "Password berhasil diubah"));
     }
 
     // ─────────────────────────────────────────────
@@ -203,51 +454,35 @@ public class AuthService {
         ipk.setIconName("Award");
         defaultGrids.add(ipk);
 
-<<<<<<< HEAD
-        // Masukkan daftar template ini ke dalam setting pengguna baru
-        setting.setProfileGridItems(defaultGrids);
-        // -------------------------------------------
-
-        settingRepository.save(setting);
-
-        return ResponseEntity.ok(Map.of("message", "Register berhasil"));
+        return defaultGrids;
     }
 
-    public ResponseEntity<?> login(LoginRequest request) {
+    // VERIVFY REGISTER
+    public ResponseEntity<?> verifyRegisterOtp(VerifyRegisterOtpRequest request) {
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
 
         if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email tidak ditemukan"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "User tidak ditemukan"));
         }
 
         User user = userOptional.get();
 
-        if (!user.getPassword().equals(request.getPassword())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Password salah"));
+        if (user.getOtp() == null || !user.getOtp().equals(request.getOtp())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "OTP salah"));
         }
 
-        // 1. Buat Token JWT menggunakan email user
-        String token = jwtUtil.generateToken(user.getEmail());
+        if (user.getOtpExpired().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "OTP sudah kadaluarsa"));
+        }
 
-        // 2. Bungkus response ke dalam Map/JSON
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Login berhasil");
-        response.put("token", token);
+        user.setVerified(true);
+        user.setOtp(null);
+        user.setOtpExpired(null);
+        userRepository.save(user);
 
-        // Menyertakan info user penting untuk disimpan di local storage frontend
-        Map<String, String> userData = new HashMap<>();
-        userData.put("id", user.getId().toString());
-        userData.put("username", user.getUsername());
-        userData.put("email", user.getEmail());
-        response.put("user", userData);
-
-        return ResponseEntity.ok(response);
-    }
-
-    public Object getAllUsers() {
-        return userRepository.findAll();
-=======
-        return defaultGrids;
->>>>>>> a85625cd128773832c88a2ca3505bb6d50ed0a98
+        return ResponseEntity.ok(Map.of("message", "Akun berhasil diverifikasi"));
     }
 }

@@ -1,6 +1,8 @@
 package com.productivity.backend.user;
 
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -20,6 +22,28 @@ public class User {
 
     private String authProvider;
 
+    private String otp;
+
+    private LocalDateTime otpExpired;
+    private String phoneNumber;
+    private Boolean verified = false;
+
+    public String getPhoneNumber() {
+    return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public Boolean getVerified() {
+        return verified;
+    }
+
+    public void setVerified(Boolean verified) {
+        this.verified = verified;
+    }
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -34,4 +58,20 @@ public class User {
 
     public String getAuthProvider() { return authProvider; }
     public void setAuthProvider(String authProvider) { this.authProvider = authProvider; }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
+    }
+
+    public LocalDateTime getOtpExpired() {
+        return otpExpired;
+    }
+
+    public void setOtpExpired(LocalDateTime otpExpired) {
+        this.otpExpired = otpExpired;
+    }
 }

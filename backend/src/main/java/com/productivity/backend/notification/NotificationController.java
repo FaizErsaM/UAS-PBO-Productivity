@@ -23,7 +23,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin(origins = "http://localhost:5173") // Supaya kodingan Frontend TypeScript gak kena CORS error saat manggil backend
+ // Supaya kodingan Frontend TypeScript gak kena CORS error saat manggil backend
 public class NotificationController {
 
     @Autowired

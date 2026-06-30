@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class AuthController {
 
     private final AuthService authService;
@@ -24,23 +24,69 @@ public class AuthController {
     public Object users() {
         return authService.getAllUsers();
     }
-    @PostMapping("/google")
-    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
-    return authService.googleLogin(request);
+    @PostMapping("/google/register")
+    public ResponseEntity<?> googleRegister(@RequestBody GoogleLoginRequest request) {
+        return authService.googleRegister(request);
     }
+
+    @PostMapping("/google/login")
+    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
+        return authService.googleLogin(request);
+    }
+    
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 
+    @PostMapping("/verify-register-otp")
+public ResponseEntity<?> verifyRegisterOtp(
+        @RequestBody VerifyRegisterOtpRequest request
+) {
+    return authService.verifyRegisterOtp(request);
+}
+
+@PostMapping("/resend-register-otp")
+public ResponseEntity<?> resendRegisterOtp(
+        @RequestBody ResendRegisterOtpRequest request
+){
+    return authService.resendRegisterOtp(request);
+}
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         return authService.login(request);
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(
+            @RequestBody ForgotPasswordRequest request) {
+
+        return authService.forgotPassword(request);
+
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(
+            @RequestBody VerifyOtpRequest request
+    ) {
+
+        return authService.verifyOtp(request);
+
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @RequestBody ResetPasswordRequest request
+    ) {
+
+        return authService.resetPassword(request);
+
+    }
+
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
-        return ResponseEntity.ok(java.util.Map.of("message", "Logout berhasil"));
+    public ResponseEntity<String> logout() {
+        return ResponseEntity.ok("Logout berhasil");
     }
 }

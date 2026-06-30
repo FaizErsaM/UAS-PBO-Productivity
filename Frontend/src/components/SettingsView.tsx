@@ -44,6 +44,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     firstName,
     setFirstName,
     lastName,
+    getAuthHeadersForFormData,
     setLastName,
     occupation,
     setOccupation,
@@ -254,7 +255,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -265,30 +266,34 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
       return;
     }
 
-    executeWithFeedback(async () => {
-      return new Promise<void>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === "string") {
-            setProfilePic(reader.result);
-            resolve();
-          } else {
-            reject(new Error("Gagal memuat gambar."));
-          }
-        };
-        reader.onerror = () => reject(new Error("Error membaca file."));
-        reader.readAsDataURL(file);
-      });
-    }, "Foto profil berhasil diunggah!");
-  };
+    // 1. Tampilkan preview lokal terlebih dahulu agar UX terasa instan
+    const localUrl = URL.createObjectURL(file);
+    setProfilePic(localUrl);
 
-  const handleGoogleImport = () => {
-    executeWithFeedback(async () => {
-      await new Promise((r) => setTimeout(r, 800));
-      setProfilePic(
-        "https://api.dicebear.com/7.x/avataaars/svg?seed=GoogleUser&style=circle&backgroundColor=transparent",
-      );
-    }, "Foto profil berhasil diimpor dari Google akun!");
+    // 2. Kirim file ke backend
+    await executeWithFeedback(async () => {
+      if (!user) throw new Error("User tidak terautentikasi.");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${API_BASE_URL}/profile-pic/${user.id}`, {
+        method: "POST",
+        headers: getAuthHeadersForFormData(), // Pastikan token jika menggunakan auth
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(
+          err.message || "Gagal mengunggah foto profil ke server",
+        );
+      }
+
+      const data = await response.json();
+      // 3. Set URL publik permanen yang dikembalikan oleh backend
+      setProfilePic(data.profilePic);
+    }, "Foto profil berhasil diperbarui!");
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -517,26 +522,12 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                 >
                   <Upload className="w-3 h-3" /> Upload Foto
                 </button>
-                <button
-                  onClick={handleGoogleImport}
-                  className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm font-medium text-slate-600 hover:text-navy hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <img
-                    src="https://www.google.com/favicon.ico"
-                    className="w-3.5 h-3.5"
-                    alt="Google"
-                  />{" "}
-                  Sync Google
-                </button>
               </div>
 
               <h3 className="text-xl font-bold text-navy">
                 {firstName} {lastName}
               </h3>
               <p className="text-slate-500 text-sm">{email}</p>
-              <div className="mt-4 px-4 py-1.5 bg-purple/10 text-purple text-xs font-semibold rounded-full">
-                Jipro Pro Premium Acc
-              </div>
 
               {/* Dynamic Mini Profile Grid preview */}
               <div className="w-full mt-6 border-t border-slate-100 pt-5">
@@ -1012,160 +1003,7 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                   </div>
                 </div>
               </Card>
-
-              {/* Email Verification Card */}
-              <Card>
-                <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-2">
-                  <h3 className="text-lg font-bold text-navy flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-purple" />
-                    Verifikasi Keamanan Email
-                  </h3>
-                  {isEmailVerified ? (
-                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg flex items-center gap-1.5 self-start">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 animate-pulse" />{" "}
-                      Terverifikasi
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg flex items-center gap-1.5 self-start">
-                      <ShieldAlert className="w-4 h-4 text-amber-600" /> Belum
-                      Terverifikasi
-                    </span>
-                  )}
-                </div>
-
-                {isEmailVerified ? (
-                  <div className="space-y-4">
-                    <div className="p-4 border border-emerald-100 bg-emerald-50/40 rounded-xl flex items-start gap-3">
-                      <div className="p-1.5 bg-emerald-100 text-emerald-700 rounded-full shrink-0">
-                        <Check className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-emerald-950">
-                          Email Anda Terverifikasi
-                        </h4>
-                        <p className="text-xs text-emerald-700 mt-1">
-                          Email{" "}
-                          <strong className="font-semibold text-emerald-900">
-                            {email}
-                          </strong>{" "}
-                          telah diverifikasi secara sukses. Akun Anda sekarang
-                          memiliki kredensial penuh dan didukung proteksi
-                          keamanan ganda.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => {
-                          setIsEmailVerified(false);
-                          setOtpSent(false);
-                          setVerificationCode("");
-                          executeWithFeedback(
-                            async () => {},
-                            "Penyambungan email diset ulang.",
-                          );
-                        }}
-                        className="px-4 py-2 border border-slate-200 text-slate-600 hover:text-navy hover:bg-slate-50 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" /> Sambungkan Ulang
-                        Email
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      Lakukan verifikasi email untuk mengonfirmasi bahwa Anda
-                      pemilik sah akun{" "}
-                      <strong className="text-navy">{email}</strong>. Ini
-                      penting demi kelancaran pemulihan kata sandi otomatis dan
-                      keamanan database.
-                    </p>
-
-                    {otpSent ? (
-                      <form
-                        onSubmit={handleConfirmVerificationCode}
-                        className="space-y-3 p-4 bg-purple/5 border border-purple/10 rounded-xl"
-                      >
-                        <div className="flex items-center justify-between">
-                          <label className="block text-xs font-bold text-navy uppercase tracking-wider">
-                            Masukkan Kode OTP
-                          </label>
-                          <span className="text-[10px] bg-purple/10 text-purple px-2 py-0.5 rounded-md font-bold">
-                            Kode Uji: {receivedCode}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            maxLength={6}
-                            value={verificationCode}
-                            onChange={(e) =>
-                              setVerificationCode(e.target.value)
-                            }
-                            placeholder="Ketik 6 digit angka"
-                            className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-center tracking-widest font-bold text-navy focus:outline-none focus:ring-1 focus:ring-purple focus:border-purple"
-                            required
-                          />
-                          <button
-                            type="submit"
-                            className="px-4 py-2 bg-purple text-white text-xs font-bold rounded-lg hover:bg-purple/80 transition-all cursor-pointer flex items-center gap-1"
-                          >
-                            Verifikasi
-                          </button>
-                        </div>
-
-                        {verificationError && (
-                          <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            {verificationError}
-                          </p>
-                        )}
-
-                        <div className="flex justify-between items-center pt-2 text-[10px] text-slate-400">
-                          <span>Tidak menerima kode?</span>
-                          <button
-                            type="button"
-                            onClick={handleSendVerificationCode}
-                            className="text-purple hover:underline font-bold"
-                          >
-                            Kirim Ulang Kode OTP
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                        <div className="flex items-center gap-2.5">
-                          <Mail className="w-5 h-5 text-purple shrink-0" />
-                          <div>
-                            <p className="text-xs font-bold text-slate-700">
-                              Kirim kode verifikasi ke:
-                            </p>
-                            <p className="text-sm font-semibold text-navy mt-0.5">
-                              {email}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={handleSendVerificationCode}
-                          disabled={isSendingCode}
-                          className="px-4 py-2 bg-linear-to-r from-purple to-soft-blue text-white rounded-xl text-xs font-bold hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
-                        >
-                          {isSendingCode ? (
-                            "Mengirim..."
-                          ) : (
-                            <>
-                              <Send className="w-3.5 h-3.5" /> Kirim Kode OTP
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
-
-              {/* Password update Form */}
+            {/* Password update Form */}
               <Card>
                 <h3 className="text-lg font-bold text-navy border-b border-slate-100 pb-4 mb-6">
                   Ubah Kata Sandi
@@ -1231,38 +1069,13 @@ export const SettingsView = ({ onLogout }: { onLogout?: () => void }) => {
                   </div>
                 </form>
               </Card>
-
-              {/* Login Sessions */}
-              <Card>
-                <h3 className="text-base font-bold text-navy border-b border-slate-100 pb-3 mb-4">
-                  Sesi Login Terkini
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
-                      <div>
-                        <p className="font-bold text-slate-800">
-                          Browser Aktif Saat Ini
-                        </p>
-                        <p className="text-slate-500 text-[10px]">
-                          Cloud Run Sandbox Ingress • Jakarta, ID
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                      Sesi Ini
-                    </span>
-                  </div>
-                </div>
-              </Card>
             </div>
           )}
 
           {/* Danger Zone */}
           <Card>
             <h3 className="text-lg font-bold text-rose-600 border-b border-rose-100 pb-4 mb-6">
-              Danger Zone (Keluar)
+              Log Out
             </h3>
             <p className="text-xs text-slate-600 mb-4 font-medium">
               Keluar dari akun akan menghapus sesi login aktif saat ini. Anda

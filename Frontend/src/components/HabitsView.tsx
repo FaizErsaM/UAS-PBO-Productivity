@@ -24,7 +24,6 @@ const API_URL = `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:808
 export const HabitsView = () => {
   const { user, setHabits: setContextHabits } = useAppContext();
   const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
-
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);

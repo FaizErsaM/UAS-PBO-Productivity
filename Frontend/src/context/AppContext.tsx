@@ -43,7 +43,12 @@ interface AppContextType {
   sendTestEmail: (
     taskId: string,
     type: "approaching" | "overdue",
-  ) => Promise<{ sent: boolean; recipient?: string; subject?: string; error?: string }>;
+  ) => Promise<{
+    sent: boolean;
+    recipient?: string;
+    subject?: string;
+    error?: string;
+  }>;
   clearNotificationLog: (taskId: string) => Promise<void>;
   addHabit: (habit: Omit<Habit, "id">) => Promise<void>;
   toggleHabitForToday: (id: string) => Promise<void>;
@@ -73,6 +78,7 @@ interface AppContextType {
   ) => Promise<void>;
   getSettingGrid: () => Promise<any[]>;
   saveGridToDb: (newGridItems: any[]) => Promise<void>;
+  getAuthHeadersForFormData: () => HeadersInit;
   updateGridItemInDb: (
     itemId: string,
     updatedItemData: { label: string; value: string; iconName: string },
@@ -92,7 +98,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
  * Pure function, gak butuh React state.
  */
 const normalizeTaskAttachment = (t: any): Task => {
-  const { attachmentStoredName, attachmentOriginalName, attachmentContentType, attachmentSize, ...rest } = t;
+  const {
+    attachmentStoredName,
+    attachmentOriginalName,
+    attachmentContentType,
+    attachmentSize,
+    ...rest
+  } = t;
   return {
     ...rest,
     attachment: attachmentStoredName
@@ -142,7 +154,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Sama seperti getAuthHeaders, tapi TANPA Content-Type.
   // Dipakai untuk multipart/form-data — browser yang set boundary otomatis.
-  const getAuthHeadersForFormData = useCallback(() => {
+  const getAuthHeadersForFormData = useCallback((): HeadersInit => {
     const token = localStorage.getItem("heyjipro_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, []);
@@ -248,7 +260,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json();
-        const normalized = tasksData.map((t: any) => normalizeTaskAttachment(t));
+        const normalized = tasksData.map((t: any) =>
+          normalizeTaskAttachment(t),
+        );
         setTasks(normalized);
       }
       if (habitsRes.ok) {
@@ -279,10 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, fetchDataFromBackend]);
 
   // 3. Operasi CRUD yang disematkan Header Keamanan
-  const addTask = async (
-    task: Omit<Task, "id">,
-    file: File | null = null,
-  ) => {
+  const addTask = async (task: Omit<Task, "id">, file: File | null = null) => {
     if (!user) throw new Error("User tidak terautentikasi.");
     await executeWithFeedback(async () => {
       const formData = new FormData();
@@ -345,7 +356,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const updated = await response.json();
-      setTasks((prev) => prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)));
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)),
+      );
     }, "Tugas berhasil diperbarui");
   };
 
@@ -359,7 +372,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!response.ok) throw new Error("Gagal memperbarui status tugas");
 
       const updated = await response.json();
-      setTasks((prev) => prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)));
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? normalizeTaskAttachment(updated) : t)),
+      );
     }, "Status tugas diperbarui");
   };
 
@@ -570,6 +585,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         setOccupation,
         saveProfileToDb,
         getSettingGrid,
+        getAuthHeadersForFormData,
         saveGridToDb,
         updateGridItemInDb,
         deleteGridItemFromDb,
