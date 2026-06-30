@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin(origins = "http://localhost:5173") // Mengizinkan React mengakses API ini dari port yang berbeda
+ // Mengizinkan React mengakses API ini dari port yang berbeda
 public class DashboardController {
 
     @Autowired
