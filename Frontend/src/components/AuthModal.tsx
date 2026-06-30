@@ -127,8 +127,6 @@ export const AuthModal = ({
         onLogin();
         onClose();
       } else {
-        alert("Kode OTP berhasil dikirim ke WhatsApp.");
-
         setRegisterStep("otp");
       }
     } catch (error: any) {
@@ -226,8 +224,6 @@ export const AuthModal = ({
       setRegisterStep("form");
 
       setIsLogin(true);
-
-      alert("Silakan login menggunakan akun Anda.");
     } catch (err: any) {
       alert(err.message);
     }
@@ -253,8 +249,6 @@ export const AuthModal = ({
       if (!response.ok) {
         throw new Error(result.message);
       }
-
-      alert("OTP berhasil dikirim ulang.");
 
       setCountdown(60);
 
@@ -337,9 +331,7 @@ export const AuthModal = ({
       }
     },
 
-    onError: () => {
-      alert("Login Google dibatalkan.");
-    },
+    onError: () => {},
   });
 
   const startForgotPassword = () => {
@@ -377,8 +369,6 @@ export const AuthModal = ({
       if (!response.ok) {
         throw new Error(result.message);
       }
-
-      alert(result.message);
 
       setForgotStep("verify_otp");
     } catch (err: any) {
