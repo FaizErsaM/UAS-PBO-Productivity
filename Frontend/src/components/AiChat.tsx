@@ -68,7 +68,6 @@ export const AiChat = () => {
       );
 
       const data = await response.json();
-      console.log("Data dari BAckend", data);
 
       if (response.ok) {
         setMessages((prev) => [...prev, { role: "ai", content: data.text }]);
