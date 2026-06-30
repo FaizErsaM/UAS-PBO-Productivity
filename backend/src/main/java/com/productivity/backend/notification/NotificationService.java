@@ -27,14 +27,15 @@ import java.util.UUID;
  * Anti-spam: setiap (taskId, eventType) hanya boleh dikirim sekali,
  * ditrack lewat NotificationLog.
  *
- * Preferensi user: email hanya dikirim jika SettingModel.emailDigestEnabled == true.
+ * Preferensi user: email hanya dikirim jika SettingModel.emailDigestEnabled ==
+ * true.
  */
 @Service
 public class NotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
-    private static final DateTimeFormatter DEADLINE_FMT =
-            DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm z").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter DEADLINE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm z")
+            .withZone(ZoneId.systemDefault());
 
     @Autowired
     private JavaMailSender mailSender;
@@ -54,7 +55,7 @@ public class NotificationService {
     @Value("${app.mail.from:noreply@productivity.local}")
     private String mailFrom;
 
-    @Value("${app.mail.frontend-url:http://localhost:5173}")
+    @Value("${app.mail.frontend-url:https://heyjipro.vercel.app}")
     private String frontendUrl;
 
     /**
@@ -86,7 +87,8 @@ public class NotificationService {
             return;
         }
         Optional<User> userOpt = userRepository.findById(task.getUserId());
-        if (userOpt.isEmpty() || userOpt.get().getEmail() == null) return;
+        if (userOpt.isEmpty() || userOpt.get().getEmail() == null)
+            return;
         User user = userOpt.get();
 
         String subject = "[Productivity] Deadline mendekati: " + task.getTitle();
@@ -109,7 +111,8 @@ public class NotificationService {
             return;
         }
         Optional<User> userOpt = userRepository.findById(task.getUserId());
-        if (userOpt.isEmpty() || userOpt.get().getEmail() == null) return;
+        if (userOpt.isEmpty() || userOpt.get().getEmail() == null)
+            return;
         User user = userOpt.get();
 
         String subject = "[Productivity] TERLAMBAT: " + task.getTitle();
@@ -131,7 +134,8 @@ public class NotificationService {
      * - tidak menulis NotificationLog
      *
      * @param taskId  id task yang mau dikirimi email test
-     * @param overdue true → pakai template overdue; false → pakai template approaching
+     * @param overdue true → pakai template overdue; false → pakai template
+     *                approaching
      * @return diagnostik: { sent, recipient, subject, error? }
      */
     public Map<String, Object> sendTestEmail(UUID taskId, boolean overdue) {
@@ -225,7 +229,8 @@ public class NotificationService {
             notificationLogRepository.save(
                     new NotificationLog(task.getId(), task.getUserId(), eventType));
         } catch (Exception e) {
-            // Unique constraint violation boleh diabaikan (race condition antar scheduler tick)
+            // Unique constraint violation boleh diabaikan (race condition antar scheduler
+            // tick)
             log.warn("Gagal catat notification log untuk task {} event {}: {}",
                     task.getId(), eventType, e.getMessage());
         }
@@ -233,7 +238,8 @@ public class NotificationService {
 
     private String buildApproachingBody(TaskModel task, User user) {
         String name = (user.getUsername() != null && !user.getUsername().isBlank())
-                ? user.getUsername() : "Sahabat";
+                ? user.getUsername()
+                : "Sahabat";
         String deadlineStr = formatDeadline(task.getDeadline());
         String courseLine = (task.getCourse() != null && !task.getCourse().isBlank())
                 ? "Mata Kuliah/Course : " + task.getCourse() + "\n"
@@ -254,7 +260,8 @@ public class NotificationService {
 
     private String buildOverdueBody(TaskModel task, User user) {
         String name = (user.getUsername() != null && !user.getUsername().isBlank())
-                ? user.getUsername() : "Sahabat";
+                ? user.getUsername()
+                : "Sahabat";
         String deadlineStr = formatDeadline(task.getDeadline());
         String courseLine = (task.getCourse() != null && !task.getCourse().isBlank())
                 ? "Mata Kuliah/Course : " + task.getCourse() + "\n"
@@ -270,7 +277,8 @@ public class NotificationService {
     }
 
     private String formatDeadline(java.time.ZonedDateTime deadline) {
-        if (deadline == null) return "-";
+        if (deadline == null)
+            return "-";
         return DEADLINE_FMT.format(deadline);
     }
 }

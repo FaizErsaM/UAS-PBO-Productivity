@@ -13,7 +13,6 @@ public class DashboardController {
     @Autowired
     private DashboardService dashboardService;
 
-    // GET http://localhost:8080/api/dashboard/{userId}
     @GetMapping("/{userId}")
     public DashboardModel getDashboard(@PathVariable UUID userId) {
         return dashboardService.getDashboardData(userId);
