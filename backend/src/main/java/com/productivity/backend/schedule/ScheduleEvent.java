@@ -9,9 +9,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "schedule_events", schema = "public")
-@Data // Otomatis membuatkan semua Getter dan Setter
-@NoArgsConstructor // Otomatis membuatkan constructor kosong
-@AllArgsConstructor // Otomatis membuatkan constructor dengan semua parameter
+@Data 
+@NoArgsConstructor 
+@AllArgsConstructor 
 public class ScheduleEvent {
 
     @Id
