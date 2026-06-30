@@ -526,7 +526,7 @@ export const AuthModal = ({
                     className="w-full flex justify-center items-center gap-3 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
                   >
                     <img
-                      src="/src/assets/images/GooglePic.jpg"
+                      src="/GooglePic.jpg"
                       alt="Google"
                       className="w-4 h-4"
                     />
